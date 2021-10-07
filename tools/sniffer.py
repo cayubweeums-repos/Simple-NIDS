@@ -16,13 +16,13 @@ def format_ipv4(unparsed_ip):
     return '.'.join(map(str, unparsed_ip))
 
 
-def format_multiline(prefix, string, size=80):
-    size -= len(prefix)
-    if isinstance(string, bytes):
-        string = ''.join(r'\x{:02x}'.format(byte) for byte in string)
-        if size % 2:
-            size -= 1
-    return '\n'.join([prefix + line for line in textwrap.wrap(string, size)])
+# def format_multiline(prefix, string, size=80):
+#     size -= len(prefix)
+#     if isinstance(string, bytes):
+#         string = ''.join(r'\x{:02x}'.format(byte) for byte in string)
+#         if size % 2:
+#             size -= 1
+#     return '\n'.join([prefix + line for line in textwrap.wrap(string, size)])
 
 
 # Protocol parsing
@@ -56,7 +56,8 @@ def parse_icmp(data):
     print('\t' + 'ICMP Packet:')
     print('\t\t' + 'ICMP Type: {}, Code: {}, Checksum: {}'.format(icmp_type, code, checksum))
     print('\t\t' + 'Data:')
-    print(format_multiline(data))
+    print(data)
+    # print(format_multiline(data))
     return icmp_type, code, checksum, data[4:]
 
 
@@ -66,7 +67,8 @@ def parse_udp(data):
     print('\t' + 'UDP Packet:')
     print('\t\t' + 'Source Port: {}, Destination Port: {}, Size: {}'.format(source_port, destination_port, size))
     print('\t\t' + 'Data:')
-    print(format_multiline(data))
+    print(data)
+    # print(format_multiline(data))
     return source_port, destination_port, size, data[8:]
 
 
@@ -89,7 +91,8 @@ def parse_tcp(data):
     print('\t\t' + 'Flag Psh: {}, Flag Rst: {}, Flag Syn: {}'.format(flag_psh, flag_rst, flag_syn))
     print('\t\t' + 'Flag Fin: {}'.format(flag_fin))
     print('\t\t' + 'Data:')
-    print(format_multiline(data))
+    print(data)
+    # print(format_multiline(data))
     return source_port, destination_port, sequence, acknowledgement, flag_urg, flag_ack, flag_psh, flag_rst, flag_syn, \
            flag_fin, data[offset:]
 
