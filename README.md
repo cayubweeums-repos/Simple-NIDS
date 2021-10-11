@@ -10,3 +10,4 @@ at the base level.
 # Known errors
 Bit shifting the packet data does not correctly grab the ipv4 sender and recipient ips
 Formatting multiline data from the data portion of the packets does not work
+Packet final data section is not parsed correctly and needs to be cleaned and formatted
