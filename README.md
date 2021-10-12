@@ -7,4 +7,7 @@ enough level.
 Windows restricts to higher level packet captures and this system needs the packet headers to operate, which are found 
 at the base level.
 
+#TODO
+Implement signature-based rule checks for inbound and outbound traffic
+
 # Known errors
