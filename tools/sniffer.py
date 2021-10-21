@@ -1,10 +1,10 @@
 import logging
 import socket
-from multiprocessing import Process
+from multiprocessing import process
 from objects.packet import Packet
 
 
-class Sniffer(Process):
+class Sniffer(process):
     def __init__(self, _queue, _time):
         super(Sniffer, self).__init__()
         self.socket = None

@@ -1,8 +1,8 @@
-from multiprocessing import Process
+from multiprocessing import process
 from tools import helpers
 
 
-class Comparator(Process):
+class Comparator(process):
     def __init__(self, _queue, _time, ruleset):
         super(Comparator, self).__init__()
         self.on = True
