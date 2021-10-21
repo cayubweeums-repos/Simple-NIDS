@@ -1,0 +1,3 @@
+alert tcp any any -> any any (msg: Congratulations you have received an alert Also you have been hacked)
+alert udp any any -> any any (flg: test,swag: yuh,msg: Congratulations you have received an alert Also you have been hacked)
+alert icmp any any -> any any (flg: AS,msg: Congratulations you have received an alert Also you have been hacked)

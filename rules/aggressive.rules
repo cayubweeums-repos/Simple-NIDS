@@ -1,0 +1,3 @@
+alert tcp any any -> any any (msg:"aggressive";)
+alert udp any any -> any any (msg:"aggressive";)
+alert icmp any any -> any any (msg:"aggressive";)
