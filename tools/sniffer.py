@@ -19,7 +19,7 @@ class Sniffer(Process):
             self.raw_data = self.socket.recv(65536)
             packet = Packet(self.raw_data)
             packet.parse()
-            logging.basicConfig(filename='logs/' + self.time + '.log', level=logging.INFO)
+            logging.basicConfig(filename='logs/{}.logs'.format(self.time), level=logging.INFO)
             logging.info(packet)
             self.queue.put(packet)
             print(packet.signature)
