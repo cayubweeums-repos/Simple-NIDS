@@ -1,7 +1,7 @@
+import logging
 import socket
 import struct
 from ipaddress import IPv4Address
-import time
 import sys
 from tools import helpers
 
@@ -10,7 +10,6 @@ class Packet:
     def __init__(self, data):
         self.flags = []
         self.name = self.__class__.__name__
-        self.time = time.time()
         self.len = len(data)
 
         # Grab eth frames and unpack
@@ -24,8 +23,6 @@ class Packet:
     # Grab ipv4 packets and unpack
     def parse(self):
         if self.protocol == 8:
-            print('\nEthernet Frame: ' + 'Receiver: {}, Sender: {}, Protocol: {}'.format(self.rec_mac, self.send_mac,
-                                                                                         self.protocol))
             self.ipv4()
             if self.protocol == 6:
                 self.tcp()
@@ -46,8 +43,6 @@ class Packet:
         self.protocol = data[9]
         self.ip_header = data[:self.ihl]
         self._data = data[self.ihl:]
-        print('\t' + 'IPV4 Packet:')
-        print('\t\t' + 'Protocol: {}, Sender: {}, Receiver: {}'.format(self.protocol, self.send_ip, self.rec_ip))
 
     def tcp(self):
         data = self._data
@@ -76,7 +71,7 @@ class Packet:
             self.flags.append('FIN')
         self.payload = data[offset:]
         self.signature = 'tcp {} {}'.format(self.send_ip, self.source_port) + ' -> {} {}'.format(self.rec_ip,
-                                                                                                  self.destination_port)
+                                                                                                 self.destination_port)
 
     def udp(self):
         data = self._data
@@ -87,7 +82,7 @@ class Packet:
         self.proto_header = data[:8]
         self.payload = data[8:]
         self.signature = 'udp {} {}'.format(self.send_ip, self.source_port) + ' -> {} {}'.format(self.rec_ip,
-                                                                                                  self.destination_port)
+                                                                                                 self.destination_port)
 
     def icmp(self):
         data = self._data
@@ -97,29 +92,28 @@ class Packet:
         self.checksum = checksum
         self.payload = data[4:]
         self.signature = 'icmp {} {}'.format(self.send_ip, self.source_port) + ' -> {} {}'.format(self.rec_ip,
-                                                                                                   self.destination_port)
+                                                                                                  self.destination_port)
 
-# For testing purposes
-    def print(self):
+    # For testing purposes
+    def log(self, t):
+        logging.basicConfig(filename='logs/{}.logs'.format(t), level=logging.INFO)
         if self.protocol == 6:
-            print('\t' + 'TCP Packet:')
-            print('\t\t' + 'Source Port: {}, Destination Port: {}, Sequence: {}'.format(self.source_port,
-                                                                                        self.destination_port,
-                                                                                        self.sequence))
-            print('\t\t' + 'Acknowledgement: {}'.format(self.acknowledgement))
-            print('\t\t' + 'Flags: {}'.format(self.flags))
-            print('\t\t' + 'Data:\n {}'.format(self.payload))
+            logging.info(
+                'TCP Packet: \n\t\tSource Port: {}, Destination Port: {}, Sequence: {}\n'.format(self.source_port,
+                                                                                                 self.destination_port,
+                                                                                                 self.sequence))
+            logging.info('\t\tAcknowledgement: {}\n'.format(self.acknowledgement))
+            logging.info('\t\tFlags: {}\n'.format(self.flags))
+            logging.info('\t\tData:\n{}'.format(self.payload))
         elif self.protocol == 17:
-            print('\t' + 'UDP Packet:')
-            print(
-                '\t\t' + 'Source Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
-                                                                                  self.destination_port, self.size))
-            print('\t' + 'Proto Header: {}'.format(self.proto_header))
-            print('\t' + 'Data: \n{}'.format(self.payload))
+            logging.info('\tUDP Packet:\n\t\tSource Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
+                                                                                                     self.destination_port,
+                                                                                                     self.size))
+            logging.info('\t\tProto Header: {}'.format(self.proto_header))
+            logging.info('\t\tData: \n{}'.format(self.payload))
         elif self.protocol == 1:
-            print('\t' + 'ICMP Packet:')
-            print('\t\t' + 'ICMP Type: {}, Code: {}, Checksum: {}'.format(self.icmp_type, self.code, self.checksum))
-            print('\t\t' + 'Data: {}'.format(self.payload))
+            logging.info('\tICMP Packet: \n\t\tICMP Type: {}, Code: {}, Checksum: {}'.format(self.icmp_type, self.code,
+                                                                                             self.checksum))
+            logging.info('\t\tData: \n{}'.format(self.payload))
         else:
             sys.stdout.write("######## UNKNOWN IPV4 PROTOCOL ########")
-        pass

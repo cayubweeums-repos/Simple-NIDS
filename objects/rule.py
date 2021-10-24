@@ -1,11 +1,3 @@
-import socket
-import struct
-from ipaddress import IPv4Address
-import time
-import sys
-from tools import helpers
-
-
 class Rule:
     def __init__(self, data):
         self.header = None
