@@ -9,8 +9,6 @@ at the base level.
 Currently, the NIDS can only sniff on an ethernet interface. Future updates may result in wireless coverage. 
 
 # TODO
-Parse the rules into header and options for comparisons to rules. Rules will always have full headers including 
-
 Implement signature-based rule checks for inbound and outbound traffic. 
 Allow the user to specify various aspects of the IDS. Interface to be used, rule set to be used (aggressive or relaxed).
 # Known errors
