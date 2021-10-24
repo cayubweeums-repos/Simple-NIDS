@@ -35,6 +35,8 @@ def format_ruleset(data):
             tcp.append(rule)
         else:
             icmp.append(rule)
+    # temp = {'tcp': tcp, 'udp': udp, 'icmp': icmp}
+    # temp.get('tcp').in
     return {'tcp': tcp, 'udp': udp, 'icmp': icmp}
 
 

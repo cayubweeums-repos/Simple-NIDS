@@ -9,7 +9,7 @@ class Rule:
         self.rec_ip = None
         self.destination_port = None
         self.direction = None
-        self.msg = "Blank Message"
+        self.message = ''
         self.data = data
 
     def parse(self):
@@ -19,7 +19,7 @@ class Rule:
             = self.header.split(' ')[:-1]
 
     def parse_options(self, data):
-        temp_options = (data.split(')')[0]).split(',')
+        temp_options = (data.split(')')[0]).split(';')
         parsed_options = []
         for option in temp_options:
             parsed_options.append(option.split(' ', 1))
@@ -27,7 +27,10 @@ class Rule:
             for x in i:
                 b = x.find(":")
                 if b >= 0:
-                    self.options[x] = i[i.index(x) + 1]
+                    if x.replace(':', '') == 'msg':
+                        self.message = i[i.index(x) + 1]
+                    else:
+                        self.options[x.replace(':', '')] = i[i.index(x) + 1]
 
     # For testing purposes
     def print(self):

@@ -1,13 +1,11 @@
 import os
-from time import sleep, time
+from time import sleep
 import datetime
 import logging
 import multiprocessing
 from tools.sniffer import Sniffer
 from tools import helpers
 from tools.comparator import Comparator
-
-#TODO use https://www.geeksforgeeks.org/multiprocessing-python-set-2/ to fix multiprocessing use
 
 print('\n\
 ╔═══╗      ╔╗      ╔═╗ ╔╗  ╔╗   \n\

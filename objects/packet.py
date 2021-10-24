@@ -19,6 +19,10 @@ class Packet:
         self.protocol = socket.htons(protocol)
         self._data = data[14:]
         self.signature = None
+        self.send_ip = None
+        self.rec_ip = None
+        self.source_port = None
+        self.destination_port = None
 
     # Grab ipv4 packets and unpack
     def parse(self):
@@ -37,8 +41,8 @@ class Packet:
 
     def ipv4(self):
         data = self._data
-        self.send_ip = IPv4Address(data[12:16])
-        self.rec_ip = IPv4Address(data[16:20])
+        self.send_ip = '{}'.format(IPv4Address(data[12:16]))
+        self.rec_ip = '{}'.format(IPv4Address(data[16:20]))
         self.ihl = (data[0] & 15) * 4
         self.protocol = data[9]
         self.ip_header = data[:self.ihl]
@@ -46,13 +50,14 @@ class Packet:
 
     def tcp(self):
         data = self._data
+        self.protocol = 'tcp'
         # ORF = offset, reserved, and flags. All of these are packaged in a different sequence of bits than the others.
         # The others all get 16 bits per
         source_port, destination_port, sequence, acknowledgement, orf = struct.unpack('! H H L L H', data[:14])
         self.source_port = source_port
         self.destination_port = destination_port
         self.sequence = sequence
-        self.acknowledgement = acknowledgement
+        self.ack = '{}'.format(acknowledgement)
 
         offset = (orf >> 12) * 4
         # all of the flags used in a three way handshake to determine a connection.
@@ -75,6 +80,7 @@ class Packet:
 
     def udp(self):
         data = self._data
+        self.protocol = 'udp'
         source_port, destination_port, size = struct.unpack('! H H 2x H', data[:8])
         self.source_port = source_port
         self.destination_port = destination_port
@@ -86,6 +92,7 @@ class Packet:
 
     def icmp(self):
         data = self._data
+        self.protocol = 'icmp'
         icmp_type, code, checksum = struct.unpack('! B B H', data[:4])
         self.icmp_type = icmp_type
         self.code = code
@@ -97,23 +104,52 @@ class Packet:
     # For testing purposes
     def log(self, t):
         logging.basicConfig(filename='logs/{}.logs'.format(t), level=logging.INFO)
-        if self.protocol == 6:
+        logging.info('IPv4 Packet: \n\t Sending IP: {}\n\tReceiving IP: {}\n\tProtocol: {}'.format(self.send_ip,
+                                                                                                   self.rec_ip,
+                                                                                                   self.protocol))
+        if self.protocol == 'tcp':
             logging.info(
-                'TCP Packet: \n\t\tSource Port: {}, Destination Port: {}, Sequence: {}\n'.format(self.source_port,
-                                                                                                 self.destination_port,
-                                                                                                 self.sequence))
-            logging.info('\t\tAcknowledgement: {}\n'.format(self.acknowledgement))
+                '\t\tTCP Packet: \n\t\tSource Port: {}, Destination Port: {}, Sequence: {}\n'.format(self.source_port,
+                                                                                                     self.destination_port,
+                                                                                                     self.sequence))
+            logging.info('\t\tAcknowledgement: {}\n'.format(self.ack))
             logging.info('\t\tFlags: {}\n'.format(self.flags))
             logging.info('\t\tData:\n{}'.format(self.payload))
-        elif self.protocol == 17:
+        elif self.protocol == 'udp':
             logging.info('\tUDP Packet:\n\t\tSource Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
                                                                                                      self.destination_port,
                                                                                                      self.size))
             logging.info('\t\tProto Header: {}'.format(self.proto_header))
             logging.info('\t\tData: \n{}'.format(self.payload))
-        elif self.protocol == 1:
+        elif self.protocol == 'icmp':
             logging.info('\tICMP Packet: \n\t\tICMP Type: {}, Code: {}, Checksum: {}'.format(self.icmp_type, self.code,
                                                                                              self.checksum))
             logging.info('\t\tData: \n{}'.format(self.payload))
         else:
             sys.stdout.write("######## UNKNOWN IPV4 PROTOCOL ########")
+
+    def error(self, t):
+        logging.basicConfig(filename='logs/{}.logs'.format(t), level=logging.INFO)
+        logging.info('IPv4 Packet: \n\t Sending IP: {}\n\tReceiving IP: {}\n\tProtocol: {}'.format(self.send_ip,
+                                                                                                   self.rec_ip,
+                                                                                                   self.protocol))
+        if self.protocol == 'tcp':
+            logging.error(
+                '\t\tTCP Packet: \n\t\tSource Port: {}, Destination Port: {}, Sequence: {}\n'.format(self.source_port,
+                                                                                                     self.destination_port,
+                                                                                                     self.sequence) +
+                '\t\tAcknowledgement: {}\n\t\tFlags: {}\n\t\tData:\n{}'.format(self.ack, self.flags, self.payload)
+            )
+        elif self.protocol == 'udp':
+            logging.error('\tUDP Packet:\n\t\tSource Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
+                                                                                                     self.destination_port,
+                                                                                                     self.size)+
+                          '\t\tProto Header: {}\n\t\tData: \n{}'.format(self.proto_header, self.payload)
+                          )
+        elif self.protocol == 'icmp':
+            logging.error('\tICMP Packet: \n\t\tICMP Type: {}, Code: {}, Checksum: {}'.format(self.icmp_type, self.code,
+                                                                                             self.checksum)+
+                          '\t\tData: \n{}'.format(self.payload)
+                          )
+        else:
+            logging.error("######## UNKNOWN IPV4 PROTOCOL ########")

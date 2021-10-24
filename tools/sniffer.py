@@ -28,3 +28,6 @@ class Sniffer(multiprocessing.Process):
 
     def stop(self):
         self.on = False
+        self.join()
+        # self.terminate()
+        self.close()

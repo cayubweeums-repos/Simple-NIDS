@@ -1,3 +1,1 @@
-alert tcp any any -> any any (msg: Congratulations you have received an alert Also you have been hacked)
-alert udp any any -> any any (flg: test,swag: yuh,msg: Congratulations you have received an alert Also you have been hacked)
-alert icmp any any -> any any (flg: AS,msg: Congratulations you have received an alert Also you have been hacked)
+alert tcp any any -> 192.168.1.102 any (ack: 0;flags: SYN;msg: Potential Nmap TCP Port Scan)
