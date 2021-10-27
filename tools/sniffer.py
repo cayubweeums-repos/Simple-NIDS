@@ -19,12 +19,11 @@ class Sniffer(multiprocessing.Process):
             self.raw_data = self.socket.recv(65536)
             packet = Packet(self.raw_data)
             packet.parse()
+
+            # For testing, allows to view all traffic coming in and out in the log
             # logging.basicConfig(filename='logs/{}.logs'.format(self.time), level=logging.INFO)
             # logging.info(packet)
             self.queue.put(packet)
-            # print('######### QUEUE #########')
-            # print(self.queue.get().print())
-            # print(packet.signature)
 
     def stop(self):
         self.on = False

@@ -35,8 +35,6 @@ def format_ruleset(data):
             tcp.append(rule)
         else:
             icmp.append(rule)
-    # temp = {'tcp': tcp, 'udp': udp, 'icmp': icmp}
-    # temp.get('tcp').in
     return {'tcp': tcp, 'udp': udp, 'icmp': icmp}
 
 
@@ -44,3 +42,9 @@ def is_allowed_specific_char(string):
     charRe = re.compile(r'[^a-zA-Z0-9]')
     string = charRe.search(string)
     return not bool(string)
+
+
+def set_network(local_ip, external_ip):
+    local_range = '.'.join(local_ip.split('.')[:3])
+    Networks = {'local_range': local_range, 'local_ip': local_ip, 'external_ip': external_ip}
+    return Networks

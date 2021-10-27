@@ -61,7 +61,6 @@ class Packet:
 
         offset = (orf >> 12) * 4
         # all of the flags used in a three way handshake to determine a connection.
-
         if ((orf & 32) >> 5) == 1:
             self.flags.append('URG')
         elif ((orf & 16) >> 4) == 1:
@@ -101,7 +100,7 @@ class Packet:
         self.signature = 'icmp {} {}'.format(self.send_ip, self.source_port) + ' -> {} {}'.format(self.rec_ip,
                                                                                                   self.destination_port)
 
-    # For testing purposes
+    # Print the packet to the log based on its protocol in a readable way
     def log(self, t):
         logging.basicConfig(filename='logs/{}.logs'.format(t), level=logging.INFO)
         logging.info('IPv4 Packet: \n\t Sending IP: {}\n\tReceiving IP: {}\n\tProtocol: {}'.format(self.send_ip,

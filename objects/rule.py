@@ -9,6 +9,7 @@ class Rule:
         self.rec_ip = None
         self.destination_port = None
         self.direction = None
+        self.flags = []
         self.message = ''
         self.data = data
 
@@ -29,6 +30,12 @@ class Rule:
                 if b >= 0:
                     if x.replace(':', '') == 'msg':
                         self.message = i[i.index(x) + 1]
+                    elif x.replace(':', '') == 'flags':
+                        temp = i[i.index(x) + 1].split(',')
+                        for f in temp:
+                            self.flags.append(f)
+                        x = x.replace(':', '')
+                        self.options[x] = ''
                     else:
                         self.options[x.replace(':', '')] = i[i.index(x) + 1]
 
