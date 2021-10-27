@@ -13,6 +13,8 @@ Allow the user to specify various aspects of the IDS. Interface to be used, rule
 
 Implement a way to label an IP as suspicious and watch for any further traffic including that IP to compare against specific rules for tracking multiple packets over a set amount of time. 
 
+Place rule syntax in README.md
+
 # Known errors
 Can only run on eth interface. Cannot be changed unless altering multiple lines of code.
 Specifically, eth0 is the interface the IDS recognizes and sniffs on.
