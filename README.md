@@ -9,10 +9,7 @@ at the base level.
 Currently, the NIDS can only sniff on an ethernet interface. Future updates may result in wireless coverage. 
 
 # TODO
-Implement signature-based rule checks for inbound and outbound traffic. 
 Allow the user to specify various aspects of the IDS. Interface to be used, rule set to be used (aggressive or relaxed).
-
-Create a way to label traffic as "Home_Net" and "External_Net" to further increase effective rule comparing. 
 
 Implement a way to label an IP as suspicious and watch for any further traffic including that IP to compare against specific rules for tracking multiple packets over a set amount of time. 
 
