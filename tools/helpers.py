@@ -1,6 +1,6 @@
 import os
 import re
-from objects.rule import Rule
+from signature.objects.rule import Rule
 
 
 def format_mac(unparsed_mac):
@@ -13,10 +13,10 @@ def get_ruleset():
           '#     Select your ruleset      #\n'
           '################################\n')
     rulesets = []
-    for f in os.listdir(os.getcwd() + '/rules'):
+    for f in os.listdir(os.getcwd() + '/signature/rules'):
         rulesets.append(f.split('.')[0])
     print(rulesets)
-    selected = open(os.getcwd() + '/rules/' + input('> ') + '.rules')
+    selected = open(os.getcwd() + '/signature/rules/' + input('> ') + '.rules')
     all_rules = []
     print('~~~~~ Loading Ruleset ~~~~~')
     for r in selected:
@@ -48,3 +48,37 @@ def set_network(local_ip, external_ip):
     local_range = '.'.join(local_ip.split('.')[:3])
     Networks = {'local_range': local_range, 'local_ip': local_ip, 'external_ip': external_ip}
     return Networks
+
+
+def parse_dataset(dataset, feature_type, iter_num):
+    data_filepath = os.getcwd() + '/data/' + dataset
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,7 +1,6 @@
-import logging
 import socket
 import multiprocessing
-from objects.packet import Packet
+from signature.objects.packet import Packet
 
 
 class Sniffer(multiprocessing.Process):
