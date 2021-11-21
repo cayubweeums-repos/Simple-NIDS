@@ -1,12 +1,12 @@
 import os
-import socket
 from time import sleep
 import datetime
 import logging
 import multiprocessing
 from tools.sniffer import Sniffer
 from tools import helpers
-from tools.comparator import Comparator
+from signature.objects.comparator import Comparator
+from anomaly.engine import engine
 import socket
 import urllib.request
 
@@ -27,6 +27,30 @@ def main():
     hostname = socket.gethostname()
     external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
     print('Hello {}@{}'.format(hostname, external_ip))
+    ids = input('Select IDS protocol anomaly-based(a) or signature-based(s)\n> ')
+    if ids == 's':
+        signature_based(hostname, external_ip)
+    elif ids == 'a':
+        print(anomaly_based())
+    else:
+        print('Please type either "s" or "a" to select ids protocol when prompted again.')
+
+
+def anomaly_based():
+    # All values for anomaly_based detection set to static values due to limited functionality implemented.
+    # The values are inplace and the methods are abstracted enough to allow for implementation of various diff values
+    # here.
+    _time = datetime.datetime.now()
+    logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
+    dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
+    dataset = 'nsl_kdd'
+    feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
+    feature_type = 'Binary'
+    iter_num = int(input('Type num of iterations: \n\t\t1\t\t15\t\t50\n> '))
+    engine(feature_type, iter_num, dataset)
+
+
+def signature_based(hostname, external_ip):
     local_ip = input('Please enter the local ip for {}\n> '.format(hostname))
 
     # No easy way to determine local ip due to not knowing if the user is running vlan's, vpn, v4 or v6, etc...
