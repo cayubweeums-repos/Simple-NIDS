@@ -26,6 +26,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.idea
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -129,9 +130,5 @@ dmypy.json
 .pyre/
 
 # Additions
-data
-data/nsl_kdd
-data/
-data/*
 test.py
 Notes.txt
