@@ -129,6 +129,9 @@ dmypy.json
 .pyre/
 
 # Additions
+data
+data/nsl_kdd
 data/
+data/*
 test.py
 Notes.txt
