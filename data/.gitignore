@@ -1,0 +1,6 @@
+*
+!.gitignore
+!nsl/.gitignore
+!nsl_kdd/
+!nsl_kdd
+nsl_kdd
