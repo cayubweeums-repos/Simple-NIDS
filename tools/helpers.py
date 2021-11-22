@@ -1,5 +1,6 @@
 import os
 import re
+import numpy as np
 from signature.objects.rule import Rule
 
 
@@ -50,35 +51,10 @@ def set_network(local_ip, external_ip):
     return Networks
 
 
-def parse_dataset(dataset, feature_type, iter_num):
-    data_filepath = os.getcwd() + '/data/' + dataset
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def get_dataset(dataset):
+    filepath = os.getcwd() + '/data/' + dataset
+    return [np.loadtxt(filepath + '/normalized_train_data_features.csv', delimiter=','),
+            np.loadtxt(filepath + '/normalized_train_data_results.csv', delimiter=','),
+            np.loadtxt(filepath + '/normalized_test_data_features.csv', delimiter=','),
+            np.loadtxt(filepath + '/normalized_test_data_results.csv', delimiter=',')]
 
