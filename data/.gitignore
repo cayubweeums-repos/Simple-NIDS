@@ -1,6 +1,3 @@
-#*
-#!.gitignore
-#!nsl/.gitignore
-#!nsl_kdd/
-#!nsl_kdd
-#nsl_kdd
+*
+!.gitignore
+!DEF CON 23 ICS Village.pcap
