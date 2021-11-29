@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
+import argparse
+import os.path
+import sys
+
+import pyshark
+from scapy.utils import RawPcapReader
+from scapy.layers.l2 import Ether
+from scapy.layers.inet import IP, UDP, TCP, ICMP
+
 """
-The following code is mainly code used from https://github.com/vnetman/pcap2csv and then modified to fit the needs
-of the IDS.
+The following code is mainly code used from https://github.com/vnetman/pcap2csv and then expanded and adapted
+to fit the needs of the IDS. The majority of the code in this file though is not mine along with the comments.
 """
 
 """pcap2csv
@@ -18,15 +27,6 @@ protocol decoding ability to generate the "textual description" field of
 the CSV, and Scapy because at the same time we want to access the "payload"
 portion of the packet (PyShark seems to be unable to provide this).
 """
-
-import argparse
-import os.path
-import sys
-
-import pyshark
-from scapy.utils import RawPcapReader
-from scapy.layers.l2 import Ether
-from scapy.layers.inet import IP, UDP, TCP
 
 
 # --------------------------------------------------
@@ -48,56 +48,119 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
     if proto == 17:
         udp_pkt_sc = ip_pkt_sc[UDP]
         l4_payload_bytes = bytes(udp_pkt_sc.payload)
-        l4_proto_name = 'UDP'
-        l4_sport = udp_pkt_sc.sport
-        l4_dport = udp_pkt_sc.dport
+
+        # Each line with a UDP packet in the CSV has this format
+        fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}'
+        #       |   |   |   |   |   |   |   |   |   |
+        #       |   |   |   |   |   |   |   |   |   o-> {9} L4 payload hexdump
+        #       |   |   |   |   |   |   |   |   o-----> {8}  total pkt length
+        #       |   |   |   |   |   |   |   o---------> {7}  dst port
+        #       |   |   |   |   |   |   o-------------> {6}  dst ip address
+        #       |   |   |   |   |   o-----------------> {5}  src port
+        #       |   |   |   |   o---------------------> {4}  src ip address
+        #       |   |   |   o-------------------------> {3}  text description
+        #       |   |   |
+        #       |   |   o----------------------------------> {2}  highest protocol
+        #       |   o--------------------------------------> {1}  time
+        #       o------------------------------------------> {0}  frame number
+
+        print(fmt.format(
+            pkt_sh.number,  # {0}
+            pkt_sh.sniff_time,  # {1}
+            pkt_sh.ip.len,
+            proto,  # {2}
+            pkt_sh.transport_layer,  # {3}
+            pkt_sh.ip.src,  # {4}
+            pkt_sh[pkt_sh.transport_layer].srcport,  # {5}
+            pkt_sh.ip.dst,  # {6}
+            pkt_sh[pkt_sh.transport_layer].dstport,  # {7}
+            pkt_sh[pkt_sh.transport_layer].length,
+            l4_payload_bytes),  # {9}
+            file=fh_csv)
+
+        return True
+
     elif proto == 6:
         tcp_pkt_sc = ip_pkt_sc[TCP]
         l4_payload_bytes = bytes(tcp_pkt_sc.payload)
-        l4_proto_name = 'TCP'
-        l4_sport = tcp_pkt_sc.sport
-        l4_dport = tcp_pkt_sc.dport
 
-    # TODO include icmp packets
+        # Each line with a TCP packet in the CSV has this format
+        fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}'
+        #       |   |   |   |   |   |   |   |   |   |
+        #       |   |   |   |   |   |   |   |   |   o-> {9} L4 payload hexdump
+        #       |   |   |   |   |   |   |   |   o-----> {8}  total pkt length
+        #       |   |   |   |   |   |   |   o---------> {7}  dst port
+        #       |   |   |   |   |   |   o-------------> {6}  dst ip address
+        #       |   |   |   |   |   o-----------------> {5}  src port
+        #       |   |   |   |   o---------------------> {4}  src ip address
+        #       |   |   |   o-------------------------> {3}  text description
+        #       |   |   |
+        #       |   |   o----------------------------------> {2}  highest protocol
+        #       |   o--------------------------------------> {1}  time
+        #       o------------------------------------------> {0}  frame number
+
+        print(fmt.format(
+            pkt_sh.number,  # {0}
+            pkt_sh.sniff_time,  # {1}
+            pkt_sh.ip.len,
+            proto,  # {2}
+            pkt_sh.transport_layer,  # {3}
+            pkt_sh.ip.src,  # {4}
+            pkt_sh[pkt_sh.transport_layer].srcport,  # {5}
+            pkt_sh.ip.dst,  # {6}
+            pkt_sh[pkt_sh.transport_layer].dstport,  # {7}
+            pkt_sh[pkt_sh.transport_layer].seq,
+            pkt_sh[pkt_sh.transport_layer].ack_raw,
+            pkt_sh[pkt_sh.transport_layer].flags_str,
+            l4_payload_bytes),  # {9}
+            file=fh_csv)
+
+        return True
+
+    elif proto == 1:
+        icmp_pkt_sc = ip_pkt_sc[ICMP]
+        l4_payload_bytes = bytes(icmp_pkt_sc.payload)
+
+        # Each line with a ICMP packet in the CSV has this format
+        fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}'
+        #       |   |   |   |   |   |   |   |   |   |
+        #       |   |   |   |   |   |   |   |   |   o-> {9} L4 payload hexdump
+        #       |   |   |   |   |   |   |   |   o-----> {8}  total pkt length
+        #       |   |   |   |   |   |   |   o---------> {7}  dst port
+        #       |   |   |   |   |   |   o-------------> {6}  dst ip address
+        #       |   |   |   |   |   o-----------------> {5}  src port
+        #       |   |   |   |   o---------------------> {4}  src ip address
+        #       |   |   |   o-------------------------> {3}  text description
+        #       |   |   |
+        #       |   |   o----------------------------------> {2}  highest protocol
+        #       |   o--------------------------------------> {1}  time
+        #       o------------------------------------------> {0}  frame number
+
+        print(fmt.format(
+            pkt_sh.number,  # {0}
+            pkt_sh.sniff_time,  # {1}
+            pkt_sh.ip.len,
+            proto,  # {2}
+            'ICMP',  # {3}
+            pkt_sh.ip.src,  # {4}
+            pkt_sh.icmp.udp_srcport,  # {5}
+            pkt_sh.ip.dst,  # {6}
+            pkt_sh.icmp.udp_dstport,  # {7}
+            pkt_sh.icmp.type,
+            pkt_sh.icmp.code,
+            pkt_sh.icmp.checksum,
+            l4_payload_bytes),  # {9}
+            file=fh_csv)
+
+        return True
 
     else:
         # Currently not handling packets that are not UDP or TCP
         print('Ignoring non-UDP/TCP packet')
         return False
 
-    # Each line of the CSV has this format
-    fmt = '{0}|{1}|{2}({3})|{4}|{5}:{6}|{7}:{8}|{9}|{10}'
-    #       |   |   |   |    |   |   |   |   |   |   |
-    #       |   |   |   |    |   |   |   |   |   |   o-> {10} L4 payload hexdump
-    #       |   |   |   |    |   |   |   |   |   o-----> {9}  total pkt length
-    #       |   |   |   |    |   |   |   |   o---------> {8}  dst port
-    #       |   |   |   |    |   |   |   o-------------> {7}  dst ip address
-    #       |   |   |   |    |   |   o-----------------> {6}  src port
-    #       |   |   |   |    |   o---------------------> {5}  src ip address
-    #       |   |   |   |    o-------------------------> {4}  text description
-    #       |   |   |   o------------------------------> {3}  L4 protocol
-    #       |   |   o----------------------------------> {2}  highest protocol
-    #       |   o--------------------------------------> {1}  time
-    #       o------------------------------------------> {0}  frame number
+    # TODO generify the if statements. Need every row of the csv to be the same in the sense of fields they have.
 
-    # Example:
-    # 1|0.0|DNS(UDP)|Standard query 0xf3de A www.cisco.com|192.168.1.116:57922|1.1.1.1:53|73|f3de010000010000000000000377777705636973636f03636f6d0000010001
-
-    print(fmt.format(
-        pkt_sh.no,  # {0}
-        pkt_sh.sniff_time,  # {1}
-        pkt_sh.protocol,  # {2}
-        l4_proto_name,  # {3}
-        pkt_sh.info,  # {4}
-        pkt_sh.source,  # {5}
-        l4_sport,  # {6}
-        pkt_sh.destination,  # {7}
-        l4_dport,  # {8}
-        pkt_sh.length,  # {9}
-        l4_payload_bytes.hex()),  # {10}
-        file=fh_csv)
-
-    return True
     # --------------------------------------------------
 
 
@@ -129,8 +192,6 @@ def pcap2csv(in_pcap, out_csv):
         for (pkt_scapy, _) in RawPcapReader(in_pcap):
             try:
                 pkt_pyshark = pcap_pyshark.next_packet()
-                # print(pkt_pyshark.sniff_timestamp)
-                # print(pkt_pyshark.sniff_time)
 
                 frame_num += 1
                 if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv):
