@@ -5,3 +5,6 @@ keras~=2.4.3
 scapy~=2.4.3
 dpkt~=1.9.7.2
 pyshark~=0.4.3
+scapy~=2.4.3
+dpkt~=1.9.7.2
+pyshark~=0.4.3

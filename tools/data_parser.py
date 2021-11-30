@@ -7,6 +7,7 @@ import pyshark
 from scapy.utils import RawPcapReader
 from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP, UDP, TCP, ICMP
+import helpers
 
 """
 The following code is mainly code used from https://github.com/vnetman/pcap2csv and then expanded and adapted
@@ -79,18 +80,16 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
         icmp_pkt_sc = ip_pkt_sc[ICMP]
         l4_payload_bytes = bytes(icmp_pkt_sc.payload)
         proto_name = 'ICMP'
-        srcport = pkt_sh.icmp.udp_srcport
-        dstport = pkt_sh.icmp.udp_dstport
+        # srcport = pkt_sh.icmp.udp_srcport
+        # dstport = pkt_sh.icmp.udp_dstport
         icmp_type = pkt_sh.icmp.type
         icmp_code = pkt_sh.icmp.code
         icmp_checksum = pkt_sh.icmp.checksum
-        length = pkt_sh.icmp.udp_length
+        # length = pkt_sh.icmp.udp_length
     else:
         # Currently not handling packets that are not UDP or TCP
         print('Ignoring non-UDP/TCP/ICMP packet')
         return False
-
-# TODO need to make sure timestamp is the same for alert as it is for training csv
 
     # Each line with a TCP packet in the CSV has this format
     fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}'
@@ -115,7 +114,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
 
     print(fmt.format(
         pkt_sh.number,
-        pkt_sh.sniff_time,
+        helpers.correct_timestamp(pkt_sh.sniff_time),
         pkt_sh.ip.len,
         proto,
         proto_name,
@@ -153,8 +152,11 @@ def pcap2csv(in_pcap, out_csv):
     # "Standard query 0xf3de A www.cisco.com", "Client Hello" etc.) are
     # made available.
     pcap_pyshark = pyshark.FileCapture(in_pcap)
+    print('pre load packets')
     pcap_pyshark.load_packets()
+    print('post load packets')
     pcap_pyshark.reset()
+    print('post reset')
 
     frame_num = 0
     ignored_packets = 0
@@ -168,6 +170,8 @@ def pcap2csv(in_pcap, out_csv):
                 pkt_pyshark = pcap_pyshark.next_packet()
 
                 frame_num += 1
+                if frame_num % 2 == 0:
+                    print(frame_num)
                 if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv):
                     ignored_packets += 1
             except StopIteration:
@@ -196,21 +200,10 @@ def command_line_args():
 # --------------------------------------------------
 
 def main():
-    """Program main entry"""
-    args = command_line_args()
-
-    if not os.path.exists(args.pcap):
-        print('Input pcap file "{}" does not exist'.format(args.pcap),
-              file=sys.stderr)
-        sys.exit(-1)
-
-    if os.path.exists(args.csv):
-        print('Output csv file "{}" already exists, '
-              'won\'t overwrite'.format(args.csv),
-              file=sys.stderr)
-        sys.exit(-1)
-
-    pcap2csv(args.pcap, args.csv)
+    # TODO implement loop to handle all pcap files
+    # TODO implement way to call the data parser from main and pass data locations here
+    pcap2csv('Z:/main/Temp_Code_Loc/Simple-NIDS/data/defcon_23_ics_village_0.pcap',
+             'Z:/main/Temp_Code_Loc/Simple-NIDS/data/training.csv')
 
 
 # --------------------------------------------------

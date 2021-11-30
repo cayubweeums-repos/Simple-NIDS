@@ -58,3 +58,14 @@ def get_dataset(dataset):
             np.loadtxt(filepath + '/normalized_test_data_features.csv', delimiter=','),
             np.loadtxt(filepath + '/normalized_test_data_results.csv', delimiter=',')]
 
+
+def correct_timestamp(old_ts):
+    pieces = old_ts.split('-')
+    all_pieces = []
+    for p in pieces:
+        add = p.split(' ')
+        for a in add:
+            all_pieces.append(a)
+    all_pieces[1:3] = ['/'.join(all_pieces[1:3])]
+    all_pieces[1:3] = ['-'.join(all_pieces[1:3])]
+    return all_pieces[1]
