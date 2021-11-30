@@ -45,121 +45,95 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
 
     ip_pkt_sc = ether_pkt_sc[IP]  # <<<< Assuming Ethernet + IPv4 here
     proto = ip_pkt_sc.fields['proto']
+
+    srcport = ''
+    dstport = ''
+
+    sequence = ''
+    ack_raw = ''
+    flags_str = ''
+
+    icmp_type = ''
+    icmp_code = ''
+    icmp_checksum = ''
+
+    length = ''
     if proto == 17:
         udp_pkt_sc = ip_pkt_sc[UDP]
         l4_payload_bytes = bytes(udp_pkt_sc.payload)
-
-        # Each line with a UDP packet in the CSV has this format
-        fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}'
-        #       |   |   |   |   |   |   |   |   |   |
-        #       |   |   |   |   |   |   |   |   |   o-> {9} L4 payload hexdump
-        #       |   |   |   |   |   |   |   |   o-----> {8}  total pkt length
-        #       |   |   |   |   |   |   |   o---------> {7}  dst port
-        #       |   |   |   |   |   |   o-------------> {6}  dst ip address
-        #       |   |   |   |   |   o-----------------> {5}  src port
-        #       |   |   |   |   o---------------------> {4}  src ip address
-        #       |   |   |   o-------------------------> {3}  text description
-        #       |   |   |
-        #       |   |   o----------------------------------> {2}  highest protocol
-        #       |   o--------------------------------------> {1}  time
-        #       o------------------------------------------> {0}  frame number
-
-        print(fmt.format(
-            pkt_sh.number,  # {0}
-            pkt_sh.sniff_time,  # {1}
-            pkt_sh.ip.len,
-            proto,  # {2}
-            pkt_sh.transport_layer,  # {3}
-            pkt_sh.ip.src,  # {4}
-            pkt_sh[pkt_sh.transport_layer].srcport,  # {5}
-            pkt_sh.ip.dst,  # {6}
-            pkt_sh[pkt_sh.transport_layer].dstport,  # {7}
-            pkt_sh[pkt_sh.transport_layer].length,
-            l4_payload_bytes),  # {9}
-            file=fh_csv)
-
-        return True
-
+        proto_name = 'UDP'
+        srcport = pkt_sh[pkt_sh.transport_layer].srcport
+        dstport = pkt_sh[pkt_sh.transport_layer].dstport
+        length = pkt_sh[pkt_sh.transport_layer].length
     elif proto == 6:
         tcp_pkt_sc = ip_pkt_sc[TCP]
         l4_payload_bytes = bytes(tcp_pkt_sc.payload)
-
-        # Each line with a TCP packet in the CSV has this format
-        fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}'
-        #       |   |   |   |   |   |   |   |   |   |
-        #       |   |   |   |   |   |   |   |   |   o-> {9} L4 payload hexdump
-        #       |   |   |   |   |   |   |   |   o-----> {8}  total pkt length
-        #       |   |   |   |   |   |   |   o---------> {7}  dst port
-        #       |   |   |   |   |   |   o-------------> {6}  dst ip address
-        #       |   |   |   |   |   o-----------------> {5}  src port
-        #       |   |   |   |   o---------------------> {4}  src ip address
-        #       |   |   |   o-------------------------> {3}  text description
-        #       |   |   |
-        #       |   |   o----------------------------------> {2}  highest protocol
-        #       |   o--------------------------------------> {1}  time
-        #       o------------------------------------------> {0}  frame number
-
-        print(fmt.format(
-            pkt_sh.number,  # {0}
-            pkt_sh.sniff_time,  # {1}
-            pkt_sh.ip.len,
-            proto,  # {2}
-            pkt_sh.transport_layer,  # {3}
-            pkt_sh.ip.src,  # {4}
-            pkt_sh[pkt_sh.transport_layer].srcport,  # {5}
-            pkt_sh.ip.dst,  # {6}
-            pkt_sh[pkt_sh.transport_layer].dstport,  # {7}
-            pkt_sh[pkt_sh.transport_layer].seq,
-            pkt_sh[pkt_sh.transport_layer].ack_raw,
-            pkt_sh[pkt_sh.transport_layer].flags_str,
-            l4_payload_bytes),  # {9}
-            file=fh_csv)
-
-        return True
-
+        proto_name = 'TCP'
+        srcport = pkt_sh[pkt_sh.transport_layer].srcport
+        dstport = pkt_sh[pkt_sh.transport_layer].dstport
+        sequence = pkt_sh[pkt_sh.transport_layer].seq
+        ack_raw = pkt_sh[pkt_sh.transport_layer].ack_raw
+        flags_str = pkt_sh[pkt_sh.transport_layer].flags_str
+        length = pkt_sh[pkt_sh.transport_layer].len
     elif proto == 1:
         icmp_pkt_sc = ip_pkt_sc[ICMP]
         l4_payload_bytes = bytes(icmp_pkt_sc.payload)
-
-        # Each line with a ICMP packet in the CSV has this format
-        fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}'
-        #       |   |   |   |   |   |   |   |   |   |
-        #       |   |   |   |   |   |   |   |   |   o-> {9} L4 payload hexdump
-        #       |   |   |   |   |   |   |   |   o-----> {8}  total pkt length
-        #       |   |   |   |   |   |   |   o---------> {7}  dst port
-        #       |   |   |   |   |   |   o-------------> {6}  dst ip address
-        #       |   |   |   |   |   o-----------------> {5}  src port
-        #       |   |   |   |   o---------------------> {4}  src ip address
-        #       |   |   |   o-------------------------> {3}  text description
-        #       |   |   |
-        #       |   |   o----------------------------------> {2}  highest protocol
-        #       |   o--------------------------------------> {1}  time
-        #       o------------------------------------------> {0}  frame number
-
-        print(fmt.format(
-            pkt_sh.number,  # {0}
-            pkt_sh.sniff_time,  # {1}
-            pkt_sh.ip.len,
-            proto,  # {2}
-            'ICMP',  # {3}
-            pkt_sh.ip.src,  # {4}
-            pkt_sh.icmp.udp_srcport,  # {5}
-            pkt_sh.ip.dst,  # {6}
-            pkt_sh.icmp.udp_dstport,  # {7}
-            pkt_sh.icmp.type,
-            pkt_sh.icmp.code,
-            pkt_sh.icmp.checksum,
-            l4_payload_bytes),  # {9}
-            file=fh_csv)
-
-        return True
-
+        proto_name = 'ICMP'
+        srcport = pkt_sh.icmp.udp_srcport
+        dstport = pkt_sh.icmp.udp_dstport
+        icmp_type = pkt_sh.icmp.type
+        icmp_code = pkt_sh.icmp.code
+        icmp_checksum = pkt_sh.icmp.checksum
+        length = pkt_sh.icmp.udp_length
     else:
         # Currently not handling packets that are not UDP or TCP
-        print('Ignoring non-UDP/TCP packet')
+        print('Ignoring non-UDP/TCP/ICMP packet')
         return False
 
-    # TODO generify the if statements. Need every row of the csv to be the same in the sense of fields they have.
+# TODO need to make sure timestamp is the same for alert as it is for training csv
+
+    # Each line with a TCP packet in the CSV has this format
+    fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}'
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    |
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    o-> {16} L4 payload hexdump
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    o-----> {15}  protocol pkt length
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    o--------->{14} ICMP checksum
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    o------------->{13} ICMP code
+    #       |   |   |   |   |   |   |   |   |   |   |    |    o----------------->{12} ICMP type
+    #       |   |   |   |   |   |   |   |   |   |   |    o--------------------->{11} All Flags
+    #       |   |   |   |   |   |   |   |   |   |   o------------------------->{10} Acknowledgment
+    #       |   |   |   |   |   |   |   |   |   o---------------------------->{9} Sequence
+    #       |   |   |   |   |   |   |   |   o------------------------------->{8} Destination Port
+    #       |   |   |   |   |   |   |   o---------------------------------->{7} Destination IP
+    #       |   |   |   |   |   |   o------------------------------------->{6} Source Port
+    #       |   |   |   |   |   o---------------------------------------->{5} Source IP
+    #       |   |   |   |   o------------------------------------------->{4} Protocol String
+    #       |   |   |   o---------------------------------------------->{3} Protocol Number
+    #       |   |   o------------------------------------------------->{2} IP pkt len
+    #       |   o---------------------------------------------------->{1} Pkt Timestamp
+    #       o------------------------------------------------------->{0} Pkt number (Beginning at first pkt)
+
+    print(fmt.format(
+        pkt_sh.number,
+        pkt_sh.sniff_time,
+        pkt_sh.ip.len,
+        proto,
+        proto_name,
+        pkt_sh.ip.src,
+        srcport,
+        pkt_sh.ip.dst,
+        dstport,
+        sequence,
+        ack_raw,
+        flags_str,
+        icmp_type,
+        icmp_code,
+        icmp_checksum,
+        length,
+        l4_payload_bytes),
+        file=fh_csv)
+
+    return True
 
     # --------------------------------------------------
 
