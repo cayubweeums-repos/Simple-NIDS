@@ -1,5 +1,7 @@
 import socket
 import multiprocessing
+import dpkt
+import sys
 from signature.objects.packet import Packet
 
 
@@ -11,6 +13,7 @@ class Sniffer(multiprocessing.Process):
         self.queue = _queue
         self.on = True
         self.raw_data = None
+        self.csv_file = None
 
     def run(self):
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
@@ -29,3 +32,11 @@ class Sniffer(multiprocessing.Process):
         self.join()
         # self.terminate()
         self.close()
+
+    def data_parser(self, training_pcap_loc):
+        read_pcap = dpkt.pcap.Reader(open(training_pcap_loc))
+        for x, y in read_pcap:
+            eth_pkt = dpkt.ethernet.Ethernet(y)
+            ip_pkt = eth_pkt.data
+            proto_pkt = ip_pkt.data
+        print()

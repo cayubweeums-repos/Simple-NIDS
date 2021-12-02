@@ -11,7 +11,8 @@ import helpers
 
 """
 The following code is mainly code used from https://github.com/vnetman/pcap2csv and then expanded and adapted
-to fit the needs of the IDS. The majority of the code in this file though is not mine along with the comments.
+to fit the needs of the IDS. A multitude of minor alterations can be found, as well as various methods have ben added.
+The majority of the code in this file though is not mine along with the comments, style, and structure.
 """
 
 """pcap2csv
@@ -32,7 +33,7 @@ portion of the packet (PyShark seems to be unable to provide this).
 
 # --------------------------------------------------
 
-def render_csv_row(pkt_sh, pkt_sc, fh_csv):
+def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     """Write one packet entry into the CSV file.
     pkt_sh is the PyShark representation of the packet
     pkt_sc is a 'bytes' representation of the packet as returned from
@@ -41,7 +42,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
     """
     ether_pkt_sc = Ether(pkt_sc)
     if ether_pkt_sc.type != 0x800:
-        print('Ignoring non-IP packet')
+        print('###Ignoring non-IP packet###')
         return False
 
     ip_pkt_sc = ether_pkt_sc[IP]  # <<<< Assuming Ethernet + IPv4 here
@@ -87,13 +88,16 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
         icmp_checksum = pkt_sh.icmp.checksum
         # length = pkt_sh.icmp.udp_length
     else:
-        # Currently not handling packets that are not UDP or TCP
+        # Currently not handling packets that are not UDP/TCP or ICMP
         print('Ignoring non-UDP/TCP/ICMP packet')
         return False
 
+    timestamp = helpers.correct_timestamp(pkt_sh.sniff_time)
+    binary_label = helpers.get_binary_label(timestamp, alert_pkts)
+
     # Each line with a TCP packet in the CSV has this format
-    fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}'
-    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    |
+    fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}'
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    |    o-> {17} Binary Label
     #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    o-> {16} L4 payload hexdump
     #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    o-----> {15}  protocol pkt length
     #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    o--------->{14} ICMP checksum
@@ -114,7 +118,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
 
     print(fmt.format(
         pkt_sh.number,
-        helpers.correct_timestamp(pkt_sh.sniff_time),
+        timestamp,
         pkt_sh.ip.len,
         proto,
         proto_name,
@@ -129,7 +133,9 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
         icmp_code,
         icmp_checksum,
         length,
-        l4_payload_bytes),
+        l4_payload_bytes,
+        binary_label
+    ),
         file=fh_csv)
 
     return True
@@ -154,9 +160,7 @@ def pcap2csv(in_pcap, out_csv):
     pcap_pyshark = pyshark.FileCapture(in_pcap)
     print('pre load packets')
     pcap_pyshark.load_packets()
-    print('post load packets')
     pcap_pyshark.reset()
-    print('post reset')
 
     frame_num = 0
     ignored_packets = 0
@@ -165,6 +169,7 @@ def pcap2csv(in_pcap, out_csv):
         # each packet. In each iteration get the PyShark packet as well,
         # and then call render_csv_row() with both representations to generate
         # the CSV row.
+        alert_pkts = helpers.get_alert_pkts()
         for (pkt_scapy, _) in RawPcapReader(in_pcap):
             try:
                 pkt_pyshark = pcap_pyshark.next_packet()
@@ -172,7 +177,7 @@ def pcap2csv(in_pcap, out_csv):
                 frame_num += 1
                 if frame_num % 2 == 0:
                     print(frame_num)
-                if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv):
+                if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv, alert_pkts):
                     ignored_packets += 1
             except StopIteration:
                 # Shouldn't happen because the RawPcapReader iterator should also
@@ -184,17 +189,15 @@ def pcap2csv(in_pcap, out_csv):
 
 
 # --------------------------------------------------
-
-def command_line_args():
-    """Helper called from main() to parse the command line arguments"""
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--pcap', metavar='<input pcap file>',
-                        help='pcap file to parse', required=True)
-    parser.add_argument('--csv', metavar='<output csv file>',
-                        help='csv file to create', required=True)
-    args = parser.parse_args()
-    return args
+# TODO continue to implement the feature extractor and use the helper get_packet_features to handle most of the items.
+#     possibly want to make helper func generic and us it for realtime packet feature thing? May not work.
+def extract_packet_features(file_loc):
+    all_lines = helpers.get_file_lines(file_loc)
+    dirty_training_features = [helpers.get_csvfile_elements(line) for line in all_lines]
+    dirty_training_results = [x[17:18] for x in dirty_training_features]
+    dirty_training_features = [x[0:17] for x in dirty_training_features]
+    normalized_features, normalized_results = helpers.get_normalized_packet_features(dirty_training_features,
+                                                                                     dirty_training_results)
 
 
 # --------------------------------------------------
@@ -202,8 +205,9 @@ def command_line_args():
 def main():
     # TODO implement loop to handle all pcap files
     # TODO implement way to call the data parser from main and pass data locations here
-    pcap2csv('Z:/main/Temp_Code_Loc/Simple-NIDS/data/defcon_23_ics_village_0.pcap',
-             'Z:/main/Temp_Code_Loc/Simple-NIDS/data/training.csv')
+    pcap2csv('Z:/main/Temp_Code_Loc/Simple-NIDS/data/defcon_first_100.pcap',
+             'Z:/main/Temp_Code_Loc/Simple-NIDS/data/training_sets/test_training.csv')
+    extract_packet_features('Z:/main/Temp_Code_Loc/Simple-NIDS/data/training_sets/test_training.csv')
 
 
 # --------------------------------------------------
