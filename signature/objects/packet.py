@@ -7,6 +7,7 @@ from tools import helpers
 
 
 class Packet:
+    # TODO place packets in similar format to that of the dataset or parse the dataset packets into a generic format
     def __init__(self, data):
         self.flags = []
         self.name = self.__class__.__name__
@@ -141,13 +142,13 @@ class Packet:
             )
         elif self.protocol == 'udp':
             logging.error('\tUDP Packet:\n\t\tSource Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
-                                                                                                     self.destination_port,
-                                                                                                     self.size)+
+                                                                                                      self.destination_port,
+                                                                                                      self.size) +
                           '\t\tProto Header: {}\n\t\tData: \n{}'.format(self.proto_header, self.payload)
                           )
         elif self.protocol == 'icmp':
             logging.error('\tICMP Packet: \n\t\tICMP Type: {}, Code: {}, Checksum: {}'.format(self.icmp_type, self.code,
-                                                                                             self.checksum)+
+                                                                                              self.checksum) +
                           '\t\tData: \n{}'.format(self.payload)
                           )
         else:

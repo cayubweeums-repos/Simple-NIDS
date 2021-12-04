@@ -3,6 +3,7 @@ import argparse
 import os.path
 import sys
 
+import numpy as np
 import pyshark
 from scapy.utils import RawPcapReader
 from scapy.layers.l2 import Ether
@@ -62,14 +63,16 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     length = ''
     if proto == 17:
         udp_pkt_sc = ip_pkt_sc[UDP]
-        l4_payload_bytes = bytes(udp_pkt_sc.payload)
+        payload = str(udp_pkt_sc.payload).replace(',', '')
+        l4_payload_bytes = bytes(payload, 'utf-8')
         proto_name = 'UDP'
         srcport = pkt_sh[pkt_sh.transport_layer].srcport
         dstport = pkt_sh[pkt_sh.transport_layer].dstport
         length = pkt_sh[pkt_sh.transport_layer].length
     elif proto == 6:
         tcp_pkt_sc = ip_pkt_sc[TCP]
-        l4_payload_bytes = bytes(tcp_pkt_sc.payload)
+        payload = str(tcp_pkt_sc.payload).replace(',', '')
+        l4_payload_bytes = bytes(payload, 'utf-8')
         proto_name = 'TCP'
         srcport = pkt_sh[pkt_sh.transport_layer].srcport
         dstport = pkt_sh[pkt_sh.transport_layer].dstport
@@ -79,7 +82,8 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
         length = pkt_sh[pkt_sh.transport_layer].len
     elif proto == 1:
         icmp_pkt_sc = ip_pkt_sc[ICMP]
-        l4_payload_bytes = bytes(icmp_pkt_sc.payload)
+        payload = str(icmp_pkt_sc.payload).replace(',', '')
+        l4_payload_bytes = bytes(payload, 'utf-8')
         proto_name = 'ICMP'
         # srcport = pkt_sh.icmp.udp_srcport
         # dstport = pkt_sh.icmp.udp_dstport
@@ -90,10 +94,13 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     else:
         # Currently not handling packets that are not UDP/TCP or ICMP
         print('Ignoring non-UDP/TCP/ICMP packet')
-        return False
+        return "False"
 
     timestamp = helpers.correct_timestamp(pkt_sh.sniff_time)
     binary_label = helpers.get_binary_label(timestamp, alert_pkts)
+    # if binary_label != 'abnormal' and binary_label != 'normal':
+    #     print("###########################################################")
+    #     print('Packet that failed {}'.format(pkt_sh.number))
 
     # Each line with a TCP packet in the CSV has this format
     fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}'
@@ -138,7 +145,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     ),
         file=fh_csv)
 
-    return True
+    return "True"
 
     # --------------------------------------------------
 
@@ -175,8 +182,8 @@ def pcap2csv(in_pcap, out_csv):
                 pkt_pyshark = pcap_pyshark.next_packet()
 
                 frame_num += 1
-                if frame_num % 2 == 0:
-                    print(frame_num)
+                # if frame_num % 2 == 0:
+                #     print(frame_num)
                 if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv, alert_pkts):
                     ignored_packets += 1
             except StopIteration:
@@ -189,8 +196,6 @@ def pcap2csv(in_pcap, out_csv):
 
 
 # --------------------------------------------------
-# TODO continue to implement the feature extractor and use the helper get_packet_features to handle most of the items.
-#     possibly want to make helper func generic and us it for realtime packet feature thing? May not work.
 def extract_packet_features(file_loc):
     all_lines = helpers.get_file_lines(file_loc)
     dirty_training_features = [helpers.get_csvfile_elements(line) for line in all_lines]
@@ -199,13 +204,20 @@ def extract_packet_features(file_loc):
     normalized_features, normalized_results = helpers.get_normalized_packet_features(dirty_training_features,
                                                                                      dirty_training_results)
 
+    features_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/features.csv')
+    np.savetxt(features_file_path, normalized_features, delimiter=",")
+    results_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/results.csv')
+    np.savetxt(results_file_path, normalized_results, delimiter=",")
+
+    return
+
 
 # --------------------------------------------------
 
 def main():
     # TODO implement loop to handle all pcap files
     # TODO implement way to call the data parser from main and pass data locations here
-    pcap2csv('Z:/main/Temp_Code_Loc/Simple-NIDS/data/defcon_first_100.pcap',
+    pcap2csv('Z:/main/Temp_Code_Loc/Simple-NIDS/data/defcon_first_1000.pcap',
              'Z:/main/Temp_Code_Loc/Simple-NIDS/data/training_sets/test_training.csv')
     extract_packet_features('Z:/main/Temp_Code_Loc/Simple-NIDS/data/training_sets/test_training.csv')
 

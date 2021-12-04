@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 from signature.objects.rule import Rule
+from signature.objects.common_ports import CommonPorts, get_name_4_value
 
 
 def format_mac(unparsed_mac):
@@ -99,56 +100,117 @@ def get_csvfile_elements(csv_line):
     return [element.strip() for element in csv_line.split(',')]
 
 
+# --------------------------------------
+
 def get_feature_value(feature, protocol_type, service, flag):
+    # Reconstruct csv line to format that will allow for AI to be trained on it
+    # format when finished '{protocol}{service}{flags}{all rest of values in bumped over indexices}'
+    new_features = []
     protocol_type_count = len(protocol_type)
     service_count = len(service)
     flag_count = len(flag)
 
+    # print(feature)
+
+    second_static_index = 4  # ----- is the str for the protocol type which needs to be removed
+    third_static_index = 9  # ----- is the port number used for determining service
+    forth_static_index = 11  # ----- is the str for the flags present in the packet
+
     second_index = int(protocol_type_count + 1)
     third_index = int(protocol_type_count + service_count + 1)
-    forth_index = int(protocol_type_count + service_count + flag_count + 1)
 
-    # index 1 is protocol_type
-    feature[1:1] = protocol_type[feature[1]]
-    feature.pop(second_index)
+    # Add all features to the new features list then place them in the old features list and remove not needed strings
 
-    # index 2 + protocol_type_count is service
-    feature[second_index:second_index] = service[feature[second_index]]
-    feature.pop(third_index)
+    # print('Key to index protocol type = {}'.format(feature[second_index]))
+    # print('Value = {}'.format(protocol_type[feature[second_index]]))
+    # print('all = {}'.format(protocol_type))
+
+    new_features[:1] = protocol_type[feature[second_static_index]]
+    new_features[second_index:second_index] = service[get_name_4_value(feature[third_static_index])]
+    new_features[third_index:third_index] = flag[feature[forth_static_index]]
+
+    # print(new_features)
+
+    # Remove old str values of protocol type, flags, src/dst Ip, src/dst port, and payload
+    # This leave very little data for the AI to use to predict incoming packets. This is a weak point
+    # To make more accurate gather, implement gathering and parsing of more values
+    # I.E. setting an urgent variable to 0 or 1 if the urgent flag is given with a pointer.
+    feature.pop(second_static_index)
+    feature.pop(second_static_index)
+    feature.pop(second_static_index)
+    feature.pop(second_static_index)
+    feature.pop(second_static_index)
+    feature.pop(second_static_index + 2)
+    feature.pop(len(feature) - 1)
+
+    feature[0:2] = new_features
+    # print('final feature = {}'.format(feature))
+
+    # index 8 will be service
+    # feature[second_index:second_index] = service[get_name_4_value(feature[second_index])]
+    # print('third index = {}'.format(feature[third_index]))
+    # feature.pop(third_index)
+    #
     # # index 3 + protocol_type_count + service_count is flag
-    feature[third_index:third_index] = flag[feature[third_index]]
-    feature.pop(forth_index)
+    # feature[third_index:third_index] = flag[feature[third_index]]
+    # print('fourth index = {}'.format(feature[third_index]))
+    # feature.pop(forth_index)
 
-    # make all values np.float64
-    feature = [np.float64(x) for x in feature]
+    temp = []
+    for x in feature:
+        if x == '':
+            temp.append(None)
+        else:
+            temp.append(x)
+    feature = [np.float64(x) for x in temp]
 
     return np.array(feature)
 
-    return
 
-def get_result_value():
+def get_result_value(result, label, label_dict):
+    second_index = int(1)
+    # index 0 is attack
+    result[0:0] = label[label_dict[result[0]]]
+    result.pop(second_index)
+    # make all values np.float64
+    print('################## {}'.format(result))
+    result = [np.float64(x) for x in result]
+    return np.array(result)
 
-    return
+
+def normalize_value(value, bottom, top):
+    value = np.float64(value)
+    bottom = np.float64(bottom)
+    top = np.float64(top)
+
+    if bottom == np.float64(0) and top == np.float64(0):
+        return np.float64(0)
+    result = np.float64((value - bottom) / (top - bottom))
+    return result
 
 
-# TODO have this method return the feature values in csv format? of a given packet for realtime predictions
 def get_normalized_packet_features(features, results):
     protocol_type = dict()
     service = dict()
     flag = dict()
-    attack = dict()
-    attack_dict = {
+    label = dict()
+    label_dict = {
         'normal': 'normal',
         'abnormal': 'abnormal',
     }
 
     for entry in features:
-        protocol_type[entry[1]] = ""
-        service[entry[2]] = ""
-        flag[entry[3]] = ""
+        for values in CommonPorts:
+            if entry[8] == values.value:
+                service[entry[8]] = ""
+            else:
+                service['OTHER'] = ""
+        protocol_type[entry[4]] = ""
+        flag[entry[11]] = ""
 
+    # print(results)
     for entry in results:
-        attack[attack_dict[entry[0]]] = ""
+        label[label_dict[entry[0]]] = ""
 
     keys = list(protocol_type.keys())
     for i in range(0, len(keys)):
@@ -164,9 +226,32 @@ def get_normalized_packet_features(features, results):
     for i in range(0, len(keys)):
         flag[keys[i]] = [int(d) for d in str(bin(i)[2:].zfill(len(flag)))]
 
-    keys = list(attack.keys())
+    keys = list(label.keys())
     for i in range(0, len(keys)):
-        attack[keys[i]] = [int(i)]
+        label[keys[i]] = [int(i)]
 
+    # TODO need to reformat below possibly
+    # train data
+    numericalized_train_data_features = [get_feature_value(
+        x, protocol_type, service, flag) for x in features]
+    normalized_train_data_features = np.array(
+        numericalized_train_data_features)
 
-    return
+    numericalized_train_data_results = [get_result_value(
+        x, label, label_dict) for x in results]
+    normalized_train_data_results = np.array(
+        numericalized_train_data_results)
+
+    ymin_train = np.amin(numericalized_train_data_features, axis=0)
+    ymax_train = np.amax(numericalized_train_data_features, axis=0)
+
+    # normalize train
+    for x in range(0, normalized_train_data_features.shape[0]):
+        for y in range(0, normalized_train_data_features.shape[1]):
+            normalized_train_data_features[x][y] = normalize_value(
+                normalized_train_data_features[x][y], ymin_train[y],
+                ymax_train[y])
+
+    return normalized_train_data_features, normalized_train_data_results
+
+# --------------------------------------
