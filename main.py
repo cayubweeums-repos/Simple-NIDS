@@ -47,7 +47,7 @@ def anomaly_based():
     # logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
     # TODO uncomment dataset and feature set to prompt user
     # dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
-    dataset = 'nsl_kdd'
+    dataset = 'defcon'
     # feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
     feature_type = 'Binary'
     model = input('Select model: \n\t\tNaive Bayes [n]\t\tLSTM [l]\n> ')

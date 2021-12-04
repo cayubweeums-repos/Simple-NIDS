@@ -33,8 +33,11 @@ class Engine(multiprocessing.Process):
         print('Which model would you like to use?')
         print('Make sure the model you would like to use is placed in the models/trained/ folder and type the filename')
 
-        self.x_train, self.y_train, self.x_test, self.y_test = \
-            helpers.get_dataset(self.dataset)
+        # TODO implement testing dataset
+        # self.x_train, self.y_train, self.x_test, self.y_test = \
+        #     helpers.get_dataset(self.dataset)
+
+        self.x_train, self.y_train = helpers.get_dataset(self.dataset)
 
         if self.model_type == 'n':
             self.train_naive()
@@ -48,15 +51,15 @@ class Engine(multiprocessing.Process):
 
         model = GaussianNB()
         model.fit(self.x_train, self.y_train)
-        predict = model.predict(self.x_test)
-        score = accuracy_score(self.y_test, predict)
-
-        print('Accuracy Score = {}'.format(score))
+        # predict = model.predict(self.x_test)
+        # score = accuracy_score(self.y_test, predict)
+        #
+        # print('Accuracy Score = {}'.format(score))
 
     def train_lstm(self):
         # Train and fit a recurrent Long Short-Term Memory model to the data
         self.x_train = self.x_train.reshape(self.x_train.shape[0], 1, self.x_train.shape[1])
-        self.x_test = self.x_test.reshape(self.x_test.shape[0], 1, self.x_test.shape[1])
+        # self.x_test = self.x_test.reshape(self.x_test.shape[0], 1, self.x_test.shape[1])
 
         shape = (self.x_train.shape[1], self.x_train.shape[2])
         model = Sequential()
@@ -78,8 +81,11 @@ class Engine(multiprocessing.Process):
         model.fit(
             self.x_train,
             self.y_train,
-            validation_data=(self.x_test, self.y_test),
+            # validation_data=(self.x_test, self.y_test),
             epochs=20,
             batch_size=50,
         )
-        model.save(os.getcwd() + '/anomaly/models/lstm')
+        # model.save(os.getcwd() + '/anomaly/models/lstm/model_{}'.format(datetime.datetime.utcnow()))
+        # print(os.path.join(os.path.dirname(__file__), 'models', 'lstm', 'model_{}'.format(datetime.datetime.utcnow())))
+        model.save(os.path.join(os.path.dirname(__file__), 'models', 'lstm'))
+        print('############ Model Saved ############\n{}'.format(os.path.join(os.path.dirname(__file__), 'models', 'lstm', 'model_{}'.format(datetime.datetime.utcnow()))))

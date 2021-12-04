@@ -53,11 +53,10 @@ def set_network(local_ip, external_ip):
 
 
 def get_dataset(dataset):
-    filepath = os.getcwd() + '/data/' + dataset
-    return [np.loadtxt(filepath + '/normalized_train_data_features.csv', delimiter=','),
-            np.loadtxt(filepath + '/normalized_train_data_results.csv', delimiter=','),
-            np.loadtxt(filepath + '/normalized_test_data_features.csv', delimiter=','),
-            np.loadtxt(filepath + '/normalized_test_data_results.csv', delimiter=',')]
+    features_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/features.csv')
+    results_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/results.csv')
+    return [np.loadtxt(features_filepath, delimiter=','),
+            np.loadtxt(results_filepath, delimiter=',')]
 
 
 def correct_timestamp(old_ts):
