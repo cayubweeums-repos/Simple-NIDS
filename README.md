@@ -2,8 +2,8 @@
 This is an implementation of a simple Network Intrusion Detection System
 
 ## Prerequisites 
-- python 3.8
-- run pip3 install requirements.txt
+- `python 3.8`
+- run `pip3 install requirements.txt`
 
 ## Assumptions
 This code-base makes a few assumptions currently. It has not been abstracted or implemented in a generic enough sense to
