@@ -6,7 +6,7 @@ import multiprocessing
 from tools.sniffer import Sniffer
 from tools import helpers
 from signature.objects.comparator import Comparator
-from anomaly.engine import engine
+from anomaly.engine import Engine
 import socket
 import urllib.request
 
@@ -22,6 +22,9 @@ print('\n\
 
 
 def main():
+    # TODO reformat so the main files goes through the calls. Setup like this to easily test anomaly-based engine
+    anomaly_based()
+
     if not os.path.exists('logs'):
         os.makedirs('logs')
     hostname = socket.gethostname()
@@ -31,7 +34,7 @@ def main():
     if ids == 's':
         signature_based(hostname, external_ip)
     elif ids == 'a':
-        print(anomaly_based())
+        anomaly_based()
     else:
         print('Please type either "s" or "a" to select ids protocol when prompted again.')
 
@@ -41,13 +44,17 @@ def anomaly_based():
     # The values are inplace and the methods are abstracted enough to allow for implementation of various diff values
     # here.
     _time = datetime.datetime.now()
-    logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
-    dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
-    dataset = 'nsl_kdd'
-    feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
+    # logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
+    # TODO uncomment dataset and feature set to prompt user
+    # dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
+    dataset = 'defcon'
+    # feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
     feature_type = 'Binary'
-    iter_num = int(input('Type num of iterations: \n\t\t1\t\t15\t\t50\n> '))
-    engine(feature_type, iter_num, dataset)
+    model = input('Select model: \n\t\tNaive Bayes [n]\t\tLSTM [l]\n> ')
+    # iter_num = int(input('Type num of iterations: \n\t\t1\t\t15\t\t50\n> '))
+    iter_num = 1
+    _engine = Engine(feature_type, iter_num, dataset, model)
+    _engine.run()
 
 
 def signature_based(hostname, external_ip):
