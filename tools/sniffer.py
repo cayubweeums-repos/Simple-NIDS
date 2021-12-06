@@ -1,6 +1,5 @@
 import socket
 import multiprocessing
-import dpkt
 import sys
 from signature.objects.packet import Packet
 
