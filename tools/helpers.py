@@ -3,6 +3,7 @@ import re
 import numpy as np
 from signature.objects.rule import Rule
 from signature.objects.common_ports import CommonPorts, get_name_4_value
+from tools import data_parser
 
 
 def format_mac(unparsed_mac):
@@ -52,11 +53,11 @@ def set_network(local_ip, external_ip):
     return Networks
 
 
-def get_dataset(dataset):
-    features_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/features.csv')
-    results_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/results.csv')
-    return [np.loadtxt(features_filepath, delimiter=','),
-            np.loadtxt(results_filepath, delimiter=',')]
+def get_datasets(training_file_loc, testing_file_loc):
+    # TODO handle if the files have already been created and there is no need to run data_parser.py
+    # if os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training_features.csv')):
+    #     return np.loadtxt()
+    return data_parser.main(training_file_loc, testing_file_loc)
 
 
 def correct_timestamp(old_ts):
@@ -103,13 +104,11 @@ def get_csvfile_elements(csv_line):
 
 def get_feature_value(feature, protocol_type, service, flag):
     # Reconstruct csv line to format that will allow for AI to be trained on it
-    # format when finished '{protocol}{service}{flags}{all rest of values in bumped over indexices}'
+    # format when finished '{protocol}{service}{flags}{all rest of values in bumped over indexes}'
     new_features = []
     protocol_type_count = len(protocol_type)
     service_count = len(service)
     flag_count = len(flag)
-
-    # print(feature)
 
     second_static_index = 4  # ----- is the str for the protocol type which needs to be removed
     third_static_index = 9  # ----- is the port number used for determining service
@@ -172,7 +171,6 @@ def get_result_value(result, label, label_dict):
     result[0:0] = label[label_dict[result[0]]]
     result.pop(second_index)
     # make all values np.float64
-    print('################## {}'.format(result))
     result = [np.float64(x) for x in result]
     return np.array(result)
 
@@ -188,42 +186,42 @@ def normalize_value(value, bottom, top):
     return result
 
 
-def get_normalized_packet_features(features, results):
-    protocol_type = dict()
-    service = dict()
-    flag = dict()
+def get_normalized_packet_features(features, results, _protocol_type, _service, _flag):
+    protocol_type = _protocol_type
+    service = _service
+    flag = _flag
     label = dict()
     label_dict = {
         'normal': 'normal',
         'abnormal': 'abnormal',
     }
 
-    for entry in features:
-        for values in CommonPorts:
-            if entry[8] == values.value:
-                service[entry[8]] = ""
-            else:
-                service['OTHER'] = ""
-        protocol_type[entry[4]] = ""
-        flag[entry[11]] = ""
+    if protocol_type.__len__() == 0:
+        for entry in features:
+            for service_name in CommonPorts:
+                if entry[8] == service_name.value:
+                    service[service_name.name] = ""
+                else:
+                    service['OTHER'] = ""
+            protocol_type[entry[4]] = ""
+            flag[entry[11]] = ""
 
-    # print(results)
+        keys = list(protocol_type.keys())
+        for i in range(0, len(keys)):
+            protocol_type[keys[i]] = [int(d) for d in str(
+                bin(i)[2:].zfill(len(protocol_type)))]
+
+        keys = list(service.keys())
+        for i in range(0, len(keys)):
+            service[keys[i]] = [int(d)
+                                for d in str(bin(i)[2:].zfill(len(service)))]
+
+        keys = list(flag.keys())
+        for i in range(0, len(keys)):
+            flag[keys[i]] = [int(d) for d in str(bin(i)[2:].zfill(len(flag)))]
+
     for entry in results:
         label[label_dict[entry[0]]] = ""
-
-    keys = list(protocol_type.keys())
-    for i in range(0, len(keys)):
-        protocol_type[keys[i]] = [int(d) for d in str(
-            bin(i)[2:].zfill(len(protocol_type)))]
-
-    keys = list(service.keys())
-    for i in range(0, len(keys)):
-        service[keys[i]] = [int(d)
-                            for d in str(bin(i)[2:].zfill(len(service)))]
-
-    keys = list(flag.keys())
-    for i in range(0, len(keys)):
-        flag[keys[i]] = [int(d) for d in str(bin(i)[2:].zfill(len(flag)))]
 
     keys = list(label.keys())
     for i in range(0, len(keys)):
@@ -251,6 +249,6 @@ def get_normalized_packet_features(features, results):
                 normalized_train_data_features[x][y], ymin_train[y],
                 ymax_train[y])
 
-    return normalized_train_data_features, normalized_train_data_results
+    return normalized_train_data_features, normalized_train_data_results, protocol_type, service, flag, ymin_train, ymax_train
 
 # --------------------------------------

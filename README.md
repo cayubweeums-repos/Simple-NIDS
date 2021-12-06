@@ -11,6 +11,7 @@ accommodate a wide birth of data. Currently, I would feel uncomfortable with the
 I used for testing. Below are the assumptions the code-base makes:
 - You are using the 'DEF CON 23 ICS Village.pcap' file from https://www.netresec.com/?page=pcapfiles 
 - The attacks being sent to your network are relatively basic
+- There are no files in the data/training_sets folder. This means the program needs to parse the specific pcap used and create those .csv files for you.
 
 ## Installation 
 Simply grab the zip, extract it, open in your favorite IDE and follow the prompts
@@ -23,6 +24,7 @@ at the base level.
 Currently, the NIDS can only sniff on an ethernet interface. Future updates may result in wireless coverage. 
 
 ## Future work
+- Make the parsing of datasets, packets more generic and not proprietary 
 - Make documentation inside the code all encompassing and this file more useful for anyone wanting to do similar work
 - Expand signature-based rule checks for inbound and outbound traffic
 - Allow the user to specify various aspects of the IDS. Interface to be used, rule set to be used (aggressive or relaxed) 

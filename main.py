@@ -23,8 +23,6 @@ print('\n\
 
 def main():
     # TODO reformat so the main files goes through the calls. Setup like this to easily test anomaly-based engine
-    anomaly_based()
-
     if not os.path.exists('logs'):
         os.makedirs('logs')
     hostname = socket.gethostname()
@@ -43,18 +41,45 @@ def anomaly_based():
     # All values for anomaly_based detection set to static values due to limited functionality implemented.
     # The values are inplace and the methods are abstracted enough to allow for implementation of various diff values
     # here.
-    _time = datetime.datetime.now()
-    # logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
     # TODO uncomment dataset and feature set to prompt user
+
     # dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
-    dataset = 'defcon'
+    training_dataset = os.path.join(os.path.dirname(__file__), 'data/defcon_23_ics_village_0.pcap')
+    testing_dataset = os.path.join(os.path.dirname(__file__), 'data/defcon_23_ics_village_1.pcap')
+
     # feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
     feature_type = 'Binary'
-    model = input('Select model: \n\t\tNaive Bayes [n]\t\tLSTM [l]\n> ')
+
+    # model = input('Select model: \n\t\tNaive Bayes [n]\t\tLSTM [l]\n> ')
+    model = 'l'
+
     # iter_num = int(input('Type num of iterations: \n\t\t1\t\t15\t\t50\n> '))
     iter_num = 1
-    _engine = Engine(feature_type, iter_num, dataset, model)
-    _engine.run()
+
+    # _queue = multiprocessing.Queue()
+    # _time = datetime.datetime.now()
+
+    # _engine.run()
+
+    _queue = multiprocessing.Queue()
+    _time = datetime.date.today()
+    logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
+
+    try:
+        print('~~~~~ Begin Sniffing ~~~~~')
+        logging.info('~~~~~ Begin Sniffing ~~~~~')
+        _sniffer = Sniffer(_queue, _time)
+        _engine = Engine(_queue, _time, feature_type, iter_num, training_dataset, testing_dataset, model)
+        _sniffer.start(), _engine.start()
+        while True:
+            sleep(1)
+    except KeyboardInterrupt:
+        print('~~~~~ Stopping IDS ~~~~~')
+        logging.info('~~~~~ Stopping IDS ~~~~~')
+        _sniffer.stop()
+        _engine.stop()
+        logging.shutdown()
+        print('~~~~~ Done ~~~~~')
 
 
 def signature_based(hostname, external_ip):
@@ -68,7 +93,7 @@ def signature_based(hostname, external_ip):
     network_info = helpers.set_network(local_ip, external_ip)
 
     _queue = multiprocessing.Queue()
-    _time = datetime.datetime.now()
+    _time = datetime.date.today()
     logging.basicConfig(filename='logs/{}.log'.format(_time), level=logging.INFO)
     logging.info('~~~~~ Loading Ruleset ~~~~~')
     selected_ruleset = helpers.get_ruleset()

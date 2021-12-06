@@ -16,6 +16,7 @@ class Sniffer(multiprocessing.Process):
         self.csv_file = None
 
     def run(self):
+        print("~~~~~~~ Sniffer Run ~~~~~~~")
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
         while self.on:
             self.raw_data = self.socket.recv(65536)
@@ -33,10 +34,11 @@ class Sniffer(multiprocessing.Process):
         # self.terminate()
         self.close()
 
-    def data_parser(self, training_pcap_loc):
-        read_pcap = dpkt.pcap.Reader(open(training_pcap_loc))
-        for x, y in read_pcap:
-            eth_pkt = dpkt.ethernet.Ethernet(y)
-            ip_pkt = eth_pkt.data
-            proto_pkt = ip_pkt.data
-        print()
+
+    # def data_parser(self, training_pcap_loc):
+    #     read_pcap = dpkt.pcap.Reader(open(training_pcap_loc))
+    #     for x, y in read_pcap:
+    #         eth_pkt = dpkt.ethernet.Ethernet(y)
+    #         ip_pkt = eth_pkt.data
+    #         proto_pkt = ip_pkt.data
+    #     print()

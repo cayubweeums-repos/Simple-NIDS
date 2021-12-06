@@ -1,15 +1,16 @@
+import enum
 from enum import Enum
 
 
 def get_name_4_value(i):
-    for name in CommonPorts:
-        if i == name.value:
-            return name
+    for service_name in CommonPorts:
+        if i == service_name.value:
+            return service_name.name
         else:
             return 'OTHER'
 
 
-class CommonPorts(Enum):
+class CommonPorts(enum.Enum):
     FTP_DATA = '20'
     FTP = '21'
     SSH = '22'
