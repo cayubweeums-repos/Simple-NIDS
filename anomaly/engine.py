@@ -1,4 +1,5 @@
 import datetime
+import logging
 import multiprocessing
 import os
 import time
@@ -41,6 +42,7 @@ class Engine(multiprocessing.Process):
 
     def run(self):
         print("~~~~~~~ Engine Run ~~~~~~~")
+        logging.basicConfig(filename='logs/{}.log'.format(self.time), level=logging.INFO)
         # Temp coverage of all options aiming to add functionality for
         # print('Would you like to train a new model or use a provided one?')
         # print('Make sure the dataset you would like to use is in the data file and type the file name here')
@@ -48,31 +50,32 @@ class Engine(multiprocessing.Process):
         # print('Which model would you like to use?')
         # print('Make sure the model you would like to use is placed in the models/trained/ folder and type the filename
 
-        # self.x_train, self.y_train, self.x_test, self.y_test = \
-        #     helpers.get_dataset(self.dataset)
-
         self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, self.ymin, \
             self.ymax = helpers.get_datasets(self.training_dataset, self.testing_dataset)
-
-        test_signature = ['UDP', 'DHCP67', '', 328, '', '', '', '', '', 308]
-        # print(packet_signature_pipeline.get_normalized_packet_features(test_signature, self.protocol_type,
-        #                                                               self.service, self.flags, self.ymin, self.ymax))
 
         # TODO implement a check that will grab the model selected if it exists or train it if it doesnt exist?
         if self.model_type == 'n':
             self.train_naive()
         else:
+            print("~~~~~~~ Engine Train ~~~~~~~")
             self.train_lstm()
 
         """
             Main Loop
         """
-        # print('Entering Main Loop')
         while self.on:
             print('Entering PREDICTION')
-            self.predict(packet_signature_pipeline.get_normalized_packet_features(self.queue.get(),
-                                                                                  self.protocol_type, self.service,
-                                                                                  self.flags, self.ymin, self.ymax))
+            current_packet = self.queue.get()
+            if current_packet.protocol == 'TCP' or current_packet.protocol == 'UDP' or current_packet.protocol == 'ICMP':
+                print('\nPacket Signature being predicted:\n\t\t{}'.format(current_packet.signature))
+                print('\nPacket protocol:\n\t\t{}'.format(current_packet.protocol))
+                self.predict(packet_signature_pipeline.get_normalized_packet_features(current_packet.signature,
+                                                                                      self.protocol_type, self.service,
+                                                                                      self.flags, self.ymin, self.ymax),
+                             current_packet)
+            else:
+                print('Non TCP UDP or ICMP packet ignored')
+                current_packet.print()
 
     def stop(self):
         self.on = False
@@ -138,7 +141,7 @@ class Engine(multiprocessing.Process):
         loss, accuracy = model.evaluate(self.x_test, self.y_test, batch_size=32)
         print("\nLoss: %.2f, Accuracy: %.2f%%" % (loss, accuracy * 100))
 
-        predictions = model.predict_classes(self.x_test)
+        predictions = model.predict(self.x_test)
         print("\nAnomalies in Test: ", np.count_nonzero(self.y_test, axis=0))
         print("\nAnomalies in Prediction: ", np.count_nonzero(predictions, axis=0))
 
@@ -148,13 +151,19 @@ class Engine(multiprocessing.Process):
         print('############ Model Saved ############\n{}'.format(self.model_filepath))
         return
 
-    def predict(self, current_packet_features):
+    def predict(self, current_packet_features, current_packet):
         if self.model is None:
             self.model = keras.models.load_model(self.model_filepath)
         current_packet_features = np.reshape(current_packet_features, (1, 1,
                                                                        current_packet_features.shape[0]))
         self.model.summary()
         print('PREDICTING...............')
-        predictions = self.model.predict_classes(current_packet_features)
-        print('\nAnomalies in prediction: ', np.count_nonzero(predictions, axis=0))
-        print(predictions)
+
+        prediction = np.count_nonzero(self.model.predict(current_packet_features), axis=0)
+        if prediction != 0:
+            print('\nAnomalies in prediction: {}'.format(prediction))
+            logging.info('~~~~~~~~~~~~~~~~~~~ ANOMALY DETECTED ~~~~~~~~~~~~~~~~~~~')
+            logging.info('\nAnomalies in prediction: {}'.format(prediction))
+            current_packet.log(self.time)
+
+

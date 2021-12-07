@@ -44,8 +44,8 @@ def anomaly_based():
     # TODO uncomment dataset and feature set to prompt user
 
     # dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
-    training_dataset = os.path.join(os.path.dirname(__file__), 'data/defcon_23_ics_village_0.pcap')
-    testing_dataset = os.path.join(os.path.dirname(__file__), 'data/defcon_23_ics_village_1.pcap')
+    training_dataset = os.path.join(os.path.dirname(__file__), 'data/def_con_0')
+    testing_dataset = os.path.join(os.path.dirname(__file__), 'data/def_con_1')
 
     # feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
     feature_type = 'Binary'
@@ -88,7 +88,7 @@ def signature_based(hostname, external_ip):
     # No easy way to determine local ip due to not knowing if the user is running vlan's, vpn, v4 or v6, etc...
     # So we ping the user for this info
     # For test purposes I reassign the local IP to a static ip for the given machine I am using for testing
-    local_ip = '192.168.1.102'
+    local_ip = '192.168.1.108'
 
     network_info = helpers.set_network(local_ip, external_ip)
 

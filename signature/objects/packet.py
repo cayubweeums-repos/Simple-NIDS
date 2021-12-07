@@ -20,14 +20,17 @@ class Packet:
         self.rec_mac = helpers.format_mac(rec_mac)
         self.send_mac = helpers.format_mac(send_mac)
         self.protocol = socket.htons(protocol)
+        self.protocol_num = None
         self._data = data[14:]
         self.signature = None
         self.send_ip = None
         self.rec_ip = None
         self.source_port = None
         self.destination_port = None
-        self.icmp_type = None
-        self.icmp_code = None
+        self.sequence = ''
+        self.ack = ''
+        self.icmp_type = ''
+        self.icmp_code = ''
         self.icmp_checksum = None
 
     # Grab ipv4 packets and unpack
@@ -35,10 +38,13 @@ class Packet:
         if self.protocol == 8:
             self.ipv4()
             if self.protocol == 6:
+                self.protocol_num = self.protocol
                 self.tcp()
             elif self.protocol == 17:
+                self.protocol_num = self.protocol
                 self.udp()
             elif self.protocol == 1:
+                self.protocol_num = self.protocol
                 self.icmp()
             else:
                 sys.stdout.write("######## UNKNOWN IPV4 PROTOCOL ########")
@@ -162,34 +168,54 @@ class Packet:
         # TODO figure out if the signature we have in the training_sets uses ip pkt length or just the protocol
         #  packet length
         raw_signature = ['{}'.format(self.protocol), '{}'.format(get_name_4_value(self.destination_port)),
-                         '{}'.format(self.get_formatted_flags()), '{}'.format(self.ip_len), '{}'.format(self.sequence),
-                         '{}'.format(self.ack), '{}'.format(self.icmp_type), '{}'.format(self.icmp_code),
-                         '{}'.format(self.icmp_checksum), '{}'.format(self.protocol_len)
+                         '{}'.format(self.get_formatted_flags()), '{}'.format(self.ip_len),
+                         '{}'.format(self.protocol_num), '{}'.format(self.sequence), '{}'.format(self.ack),
+                         '{}'.format(self.icmp_type), '{}'.format(self.icmp_code), '{}'.format(self.protocol_len)
                          ]
         # Use test_signature to test the parsing of signatures and predictions in realtime
         test_signature = 'UDP', 'DHCP67', None, 328, None, None, None, None, None, 308
 
         # clean_signature = packet_signature_pipeline.get_normalized_packet_features(test_signature)
         # return clean_signature
-        return 'noice'
+        return raw_signature
 
     def get_formatted_flags(self):
-        temp = '·······'
-        if len(self.flags) == 0 or len(self.flags) is None: return None
+        temp = ''
+        if len(self.flags) == 0 or len(self.flags) is None: return ''
+        if self.flags.__contains__('URG'):
+            temp += 'U'
         if self.flags.__contains__('ACK'):
             temp += 'A'
-        else:
-            temp += '·'
         if self.flags.__contains__('PSH'):
             temp += 'P'
-        else:
-            temp += '·'
         if self.flags.__contains__('SYN'):
-            temp += '·S'
-        else:
-            temp += '··'
+            temp += 'S'
         if self.flags.__contains__('FIN'):
             temp += 'F'
-        else:
-            temp += '·'
         return temp
+
+    # Only use if you want console barf or need to test features
+    def print(self):
+
+        print('IPv4 Packet: \n\t Sending IP: {}\n\tReceiving IP: {}\n\tProtocol: {}'.format(self.send_ip,
+                                                                                            self.rec_ip,
+                                                                                            self.protocol))
+        if self.protocol == 'TCP':
+            print(
+                '\t\tTCP Packet: \n\t\tSource Port: {}, Destination Port: {}, Sequence: {}\n'.format(self.source_port,
+                                                                                                     self.destination_port,
+                                                                                                     self.sequence))
+            print('\t\tAcknowledgement: {}\n'.format(self.ack))
+            print('\t\tFlags: {}\n'.format(self.flags))
+            print('\t\tSignature:\n{}'.format(self.signature))
+        elif self.protocol == 'UDP':
+            print('\tUDP Packet:\n\t\tSource Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
+                                                                                                     self.destination_port,
+                                                                                                     self.size))
+            print('\t\tProto Header: {}'.format(self.proto_header))
+            print('\t\tSignature: \n{}'.format(self.signature))
+        elif self.protocol == 'ICMP':
+            print(
+                '\tICMP Packet: \n\t\tICMP Type: {}, Code: {}, Checksum: {}'.format(self.icmp_type, self.icmp_code,
+                                                                                    self.icmp_checksum))
+            print('\t\tSignature: \n{}'.format(self.signature))

@@ -60,6 +60,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     icmp_code = ''
 
     protocol_length = ''
+
     if proto == 17:
         udp_pkt_sc = ip_pkt_sc[UDP]
         payload = str(udp_pkt_sc.payload).replace(',', '')

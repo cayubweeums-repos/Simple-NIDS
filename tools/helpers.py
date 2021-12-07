@@ -1,5 +1,6 @@
 import os
 import re
+import codecs
 import numpy as np
 from signature.objects.rule import Rule
 from signature.objects.common_ports import CommonPorts, get_name_4_value
@@ -92,7 +93,7 @@ def get_binary_label(timestamp, alert_pkts):
 
 
 def get_file_lines(file):
-    with open(file, 'r') as raw_lines:
+    with codecs.open(file, 'r', encoding='utf-8', errors='ignore') as raw_lines:
         return raw_lines.readlines()
 
 

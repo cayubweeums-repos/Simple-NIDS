@@ -16,12 +16,15 @@ def get_feature_value(feature, protocol_type, service, flag):
     third_index = int(protocol_type_count + service_count + 1)
 
     # Add all features to the new features list then place them in the old features list and remove not needed strings
+    # print(flag)
+    # print(protocol_type)
+    # print(service)
 
     new_features[:1] = protocol_type[feature[0]]
     new_features[second_index:second_index] = service[get_name_4_value(feature[1])]
     new_features[third_index:third_index] = flag[feature[2]]
 
-    feature[0:2] = new_features
+    feature[0:3] = new_features
 
     temp = []
     for x in feature:
