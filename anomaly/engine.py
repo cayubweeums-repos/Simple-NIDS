@@ -64,18 +64,18 @@ class Engine(multiprocessing.Process):
             Main Loop
         """
         while self.on:
-            print('Entering PREDICTION')
+            # print('Entering PREDICTION')
             current_packet = self.queue.get()
             if current_packet.protocol == 'TCP' or current_packet.protocol == 'UDP' or current_packet.protocol == 'ICMP':
-                print('\nPacket Signature being predicted:\n\t\t{}'.format(current_packet.signature))
-                print('\nPacket protocol:\n\t\t{}'.format(current_packet.protocol))
+                # print('\nPacket Signature being predicted:\n\t\t{}'.format(current_packet.signature))
+                # print('\nPacket protocol:\n\t\t{}'.format(current_packet.protocol))
                 self.predict(packet_signature_pipeline.get_normalized_packet_features(current_packet.signature,
                                                                                       self.protocol_type, self.service,
                                                                                       self.flags, self.ymin, self.ymax),
                              current_packet)
             else:
                 print('Non TCP UDP or ICMP packet ignored')
-                current_packet.print()
+                # current_packet.print()
 
     def stop(self):
         self.on = False
@@ -156,12 +156,14 @@ class Engine(multiprocessing.Process):
             self.model = keras.models.load_model(self.model_filepath)
         current_packet_features = np.reshape(current_packet_features, (1, 1,
                                                                        current_packet_features.shape[0]))
-        self.model.summary()
         print('PREDICTING...............')
 
         prediction = np.count_nonzero(self.model.predict(current_packet_features), axis=0)
         if prediction != 0:
-            print('\nAnomalies in prediction: {}'.format(prediction))
+            print('~~~~~~~~~~~~~~~~~~~ ANOMALY DETECTED ~~~~~~~~~~~~~~~~~~~')
+            print('\t\tSource of Anomaly: {}\n\t\tTrying to reach port {}'.format(current_packet.send_ip,
+                                                                                  current_packet.destination_port))
+            # print('\nAnomalies in prediction: {}'.format(prediction))
             logging.info('~~~~~~~~~~~~~~~~~~~ ANOMALY DETECTED ~~~~~~~~~~~~~~~~~~~')
             logging.info('\nAnomalies in prediction: {}'.format(prediction))
             current_packet.log(self.time)

@@ -52,14 +52,11 @@ def get_normalized_packet_features(raw_features, protocol_type, service, flag, y
     # print(results)
     # for entry in results:
     #     label[label_dict[entry[0]]] = ""
-
-    print('Getting numericalized features')
     numericalized_train_data_features = get_feature_value(raw_features, protocol_type, service, flag)
     normalized_pkt_features = np.array(
         numericalized_train_data_features)
 
     # normalize pkt
-    print('Normalizing features')
     for x in range(0, normalized_pkt_features.shape[0]):
         normalized_pkt_features[x] = normalize_value(normalized_pkt_features[x], ymin[x], ymax[x])
 

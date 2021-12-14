@@ -88,7 +88,7 @@ def signature_based(hostname, external_ip):
     # No easy way to determine local ip due to not knowing if the user is running vlan's, vpn, v4 or v6, etc...
     # So we ping the user for this info
     # For test purposes I reassign the local IP to a static ip for the given machine I am using for testing
-    local_ip = '192.168.1.108'
+    local_ip = '192.168.204.6'
 
     network_info = helpers.set_network(local_ip, external_ip)
 

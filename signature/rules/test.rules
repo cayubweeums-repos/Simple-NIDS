@@ -1,1 +1,0 @@
-alert tcp any any -> 192.168.1.108 any (ack: 0;flags: SYN;msg: TCP Port Scan)

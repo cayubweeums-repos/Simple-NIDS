@@ -31,15 +31,15 @@ def get_ruleset():
 
 
 def format_ruleset(data):
-    tcp, udp, icmp = [], [], []
+    TCP, UDP, ICMP = [], [], []
     for rule in data:
-        if rule.protocol == 'udp':
-            udp.append(rule)
-        elif rule.protocol == 'tcp':
-            tcp.append(rule)
+        if rule.protocol == 'UDP':
+            UDP.append(rule)
+        elif rule.protocol == 'TCP':
+            TCP.append(rule)
         else:
-            icmp.append(rule)
-    return {'tcp': tcp, 'udp': udp, 'icmp': icmp}
+            ICMP.append(rule)
+    return {'TCP': TCP, 'UDP': UDP, 'ICMP': ICMP}
 
 
 def is_allowed_specific_char(string):
