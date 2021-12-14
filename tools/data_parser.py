@@ -8,7 +8,7 @@ import pyshark
 from scapy.utils import RawPcapReader
 from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP, UDP, TCP, ICMP
-import helpers
+from tools import helpers
 
 """
 The following code is mainly code used from https://github.com/vnetman/pcap2csv and then expanded and adapted
@@ -58,9 +58,9 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
 
     icmp_type = ''
     icmp_code = ''
-    icmp_checksum = ''
 
-    length = ''
+    protocol_length = ''
+
     if proto == 17:
         udp_pkt_sc = ip_pkt_sc[UDP]
         payload = str(udp_pkt_sc.payload).replace(',', '')
@@ -68,7 +68,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
         proto_name = 'UDP'
         srcport = pkt_sh[pkt_sh.transport_layer].srcport
         dstport = pkt_sh[pkt_sh.transport_layer].dstport
-        length = pkt_sh[pkt_sh.transport_layer].length
+        protocol_length = pkt_sh[pkt_sh.transport_layer].length
     elif proto == 6:
         tcp_pkt_sc = ip_pkt_sc[TCP]
         payload = str(tcp_pkt_sc.payload).replace(',', '')
@@ -79,7 +79,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
         sequence = pkt_sh[pkt_sh.transport_layer].seq
         ack_raw = pkt_sh[pkt_sh.transport_layer].ack_raw
         flags_str = pkt_sh[pkt_sh.transport_layer].flags_str
-        length = pkt_sh[pkt_sh.transport_layer].len
+        protocol_length = pkt_sh[pkt_sh.transport_layer].len
     elif proto == 1:
         icmp_pkt_sc = ip_pkt_sc[ICMP]
         payload = str(icmp_pkt_sc.payload).replace(',', '')
@@ -89,12 +89,10 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
         # dstport = pkt_sh.icmp.udp_dstport
         icmp_type = pkt_sh.icmp.type
         icmp_code = pkt_sh.icmp.code
-        icmp_checksum = pkt_sh.icmp.checksum
-        # length = pkt_sh.icmp.udp_length
+
     else:
         # Currently not handling packets that are not UDP/TCP or ICMP
-        print('Ignoring non-UDP/TCP/ICMP packet')
-        return "False"
+        return False
 
     timestamp = helpers.correct_timestamp(pkt_sh.sniff_time)
     binary_label = helpers.get_binary_label(timestamp, alert_pkts)
@@ -103,15 +101,14 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     #     print('Packet that failed {}'.format(pkt_sh.number))
 
     # Each line with a TCP packet in the CSV has this format
-    fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}'
-    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    |    o-> {17} Binary Label
-    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    o-> {16} L4 payload hexdump
-    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    o-----> {15}  protocol pkt length
-    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    o--------->{14} ICMP checksum
+    fmt = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}'
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    |    o-> {16} Binary Label
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    |    o-----> {15} L4 payload hexdump
+    #       |   |   |   |   |   |   |   |   |   |   |    |    |    |    o---------> {14}  protocol pkt length
     #       |   |   |   |   |   |   |   |   |   |   |    |    |    o------------->{13} ICMP code
     #       |   |   |   |   |   |   |   |   |   |   |    |    o----------------->{12} ICMP type
     #       |   |   |   |   |   |   |   |   |   |   |    o--------------------->{11} All Flags
-    #       |   |   |   |   |   |   |   |   |   |   o------------------------->{10} Acknowledgment
+    #       |   |   |   |   |   |   |   |   |   |   o------------------------->{10} Acknowledgement
     #       |   |   |   |   |   |   |   |   |   o---------------------------->{9} Sequence
     #       |   |   |   |   |   |   |   |   o------------------------------->{8} Destination Port
     #       |   |   |   |   |   |   |   o---------------------------------->{7} Destination IP
@@ -138,8 +135,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
         flags_str,
         icmp_type,
         icmp_code,
-        icmp_checksum,
-        length,
+        protocol_length,
         l4_payload_bytes,
         binary_label
     ),
@@ -196,30 +192,43 @@ def pcap2csv(in_pcap, out_csv):
 
 
 # --------------------------------------------------
-def extract_packet_features(file_loc):
+def extract_packet_features(file_loc, filename, protocol_type, service, flag):
     all_lines = helpers.get_file_lines(file_loc)
     dirty_training_features = [helpers.get_csvfile_elements(line) for line in all_lines]
-    dirty_training_results = [x[17:18] for x in dirty_training_features]
-    dirty_training_features = [x[0:17] for x in dirty_training_features]
-    normalized_features, normalized_results = helpers.get_normalized_packet_features(dirty_training_features,
-                                                                                     dirty_training_results)
+    dirty_training_results = [x[16:17] for x in dirty_training_features]
+    dirty_training_features = [x[0:16] for x in dirty_training_features]
+    normalized_features, normalized_results, protocol_type, service, flag, ymin, ymax = \
+        helpers.get_normalized_packet_features(dirty_training_features, dirty_training_results, protocol_type, service, flag)
 
-    features_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/features.csv')
+    features_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/' + filename +
+                                      '_features.csv')
     np.savetxt(features_file_path, normalized_features, delimiter=",")
-    results_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/results.csv')
+    results_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/' + filename +
+                                     '_results.csv')
     np.savetxt(results_file_path, normalized_results, delimiter=",")
 
-    return
+    return normalized_features, normalized_results, protocol_type, service, flag, ymin, ymax
 
 
 # --------------------------------------------------
 
-def main():
+def main(training_file_loc, testing_file_loc):
     # TODO implement loop to handle all pcap files
     # TODO implement way to call the data parser from main and pass data locations here
-    pcap2csv('Z:/main/Temp_Code_Loc/Simple-NIDS/data/defcon_first_1000.pcap',
-             'Z:/main/Temp_Code_Loc/Simple-NIDS/data/training_sets/test_training.csv')
-    extract_packet_features('Z:/main/Temp_Code_Loc/Simple-NIDS/data/training_sets/test_training.csv')
+    training_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training.csv')
+    testing_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/testing.csv')
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training.csv')):
+        pcap2csv(training_file_loc, training_csv_loc)
+        pcap2csv(testing_file_loc, testing_csv_loc)
+
+    training_features, training_results, protocol_type, service, flag, ymin, ymax = \
+        extract_packet_features(training_csv_loc, 'training', dict(), dict(), dict())
+
+    testing_features, testing_results, protocol_typ, servic, fla, min, max = \
+        extract_packet_features(testing_csv_loc, 'testing', protocol_type, service, flag)
+
+    return training_features, training_results, testing_features, testing_results, \
+           protocol_type, service, flag, ymin, ymax
 
 
 # --------------------------------------------------

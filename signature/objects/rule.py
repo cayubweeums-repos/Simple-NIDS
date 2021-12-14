@@ -25,6 +25,8 @@ class Rule:
         for option in temp_options:
             parsed_options.append(option.split(' ', 1))
         for i in parsed_options:
+            print(i)
+            print(parsed_options)
             for x in i:
                 b = x.find(":")
                 if b >= 0:
