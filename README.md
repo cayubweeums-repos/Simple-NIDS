@@ -35,7 +35,3 @@ Currently, the NIDS can only sniff on an ethernet interface. Future updates may 
 ## Known errors
 Can only run on eth interface. Cannot be changed unless altering multiple lines of code.
 Specifically, eth0 is the interface the IDS recognizes and sniffs on.
-
-Errors are thrown when ICMP packets do not contain a source port.
-
-Errors are thrown when the Queue does not have any items in it and the comparator tries to run
