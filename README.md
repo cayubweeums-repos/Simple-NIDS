@@ -1,4 +1,4 @@
-# Simple-NIDS (In-Development)
+# Simple-NIDS (WIP)
 This is an implementation of a simple Network Intrusion Detection System
 
 ## Prerequisites 
