@@ -9,25 +9,34 @@ from signature.objects.comparator import Comparator
 from anomaly.engine import Engine
 import socket
 import urllib.request
+import curses
+from curses import wrapper
+from rich.traceback import install
+install()
 
-print('\n\
-╔═══╗      ╔╗      ╔═╗ ╔╗  ╔╗   \n\
-║╔═╗║      ║║      ║║╚╗║║  ║║   \n\
-║╚══╦╦╗╔╦══╣║╔══╗  ║╔╗╚╝╠╦═╝╠══╗\n\
-╚══╗╠╣╚╝║╔╗║║║║═╬══╣║╚╗║╠╣╔╗║══╣\n\
-║╚═╝║║║║║╚╝║╚╣║═╬══╣║ ║║║║╚╝╠══║\n\
-╚═══╩╩╩╩╣╔═╩═╩══╝  ╚╝ ╚═╩╩══╩══╝\n\
-        ║║                      \n\
-        ╚╝                      ')
+logo = '''
+   _____ _                 _             _   _ _____ _____   _____ 
+  / ____(_)               | |           | \ | |_   _|  __ \ / ____|
+ | (___  _ _ __ ___  _ __ | | ___ ______|  \| | | | | |  | | (___  
+  \___ \| | '_ ` _ \| '_ \| |/ _ \______| . ` | | | | |  | |\___ \ 
+  ____) | | | | | | | |_) | |  __/      | |\  |_| |_| |__| |____) |
+ |_____/|_|_| |_| |_| .__/|_|\___|      |_| \_|_____|_____/|_____/ 
+                    | |                                            
+                    |_|                                                               
+'''
 
 
-def main():
+def main(stdcr):
     # TODO reformat so the main files goes through the calls. Setup like this to easily test anomaly-based engine
+    stdcr.clear()
     if not os.path.exists('logs'):
         os.makedirs('logs')
     hostname = socket.gethostname()
     external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
-    print('Hello {}@{}'.format(hostname, external_ip))
+    stdcr.addstr(f'{logo}')
+    stdcr.addstr(f"Hello {hostname}@{external_ip}\n")
+    stdcr.refresh()
+
     ids = input('Select IDS protocol anomaly-based(a) or signature-based(s)\n> ')
     if ids == 's':
         signature_based(hostname, external_ip)
@@ -118,4 +127,4 @@ def signature_based(hostname, external_ip):
         print('~~~~~ Done ~~~~~')
 
 
-main()
+wrapper(main)

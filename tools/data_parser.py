@@ -12,7 +12,7 @@ from tools import helpers
 
 """
 The following code is mainly code used from https://github.com/vnetman/pcap2csv and then expanded and adapted
-to fit the needs of the IDS. A multitude of minor alterations can be found, as well as various methods have ben added.
+to fit the needs of the IDS. A multitude of minor alterations can be found, as well as various methods have been added.
 The majority of the code in this file though is not mine along with the comments, style, and structure.
 """
 
