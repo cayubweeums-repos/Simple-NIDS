@@ -13,26 +13,22 @@ def format_mac(unparsed_mac):
 
 
 def get_ruleset():
-    print('################################\n'
-          '#     Select your ruleset      #\n'
-          '################################\n')
     rulesets = []
     for f in os.listdir(os.getcwd() + '/signature/rules'):
         rulesets.append(f.split('.')[0])
-    print(rulesets)
-    selected = open(os.getcwd() + '/signature/rules/' + input('> ') + '.rules')
+    return rulesets
+
+
+def format_ruleset(selected_ruleset):
+    selected = open(os.getcwd() + '/signature/rules/' + selected_ruleset + '.rules')
     all_rules = []
-    print('~~~~~ Loading Ruleset ~~~~~')
     for r in selected:
         rule = Rule(data=r)
         rule.parse()
         all_rules.append(rule)
-    return format_ruleset(all_rules)
 
-
-def format_ruleset(data):
     TCP, UDP, ICMP = [], [], []
-    for rule in data:
+    for rule in all_rules:
         if rule.protocol == 'UDP':
             UDP.append(rule)
         elif rule.protocol == 'TCP':
@@ -79,7 +75,7 @@ def correct_timestamp(old_ts):
 
 def get_alert_pkts():
     alert_pkts = []
-    for alert in get_file_lines('Z:/main/Temp_Code_Loc/Simple-NIDS/data/alert.csv'):
+    for alert in get_file_lines('Z:/main/Temp_Code_Loc/Simple-NIDS/data/alerts_0.csv'):
         split_line = get_csvfile_elements(alert)
         alert_pkts.append(split_line[0].replace(" ", ""))
     return alert_pkts

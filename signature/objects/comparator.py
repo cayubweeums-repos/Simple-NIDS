@@ -1,16 +1,19 @@
 import multiprocessing
 import logging
+from rich import pretty, inspect
+from rich.traceback import install
 
 
 class Comparator(multiprocessing.Process):
-    def __init__(self, _queue, _time, ruleset, network_info):
+    def __init__(self, _queue, log, ruleset, network_info):
         super(Comparator, self).__init__()
+        install()
+        pretty.install()
         self.network_info = network_info
         self.on = True
         self.queue = _queue
-        self.time = _time
+        self.log = log
         self.ruleset = ruleset
-        logging.basicConfig(filename='logs/{}.logs'.format(self.time), level=logging.INFO)
 
     def run(self):
         while self.on:
@@ -19,41 +22,42 @@ class Comparator(multiprocessing.Process):
             self.detection_engine(current_packet, self.ruleset)
 
     def detection_engine(self, current_packet, ruleset):
-        print('###############')
-        print(current_packet.protocol)
-        print(self.ruleset.get(current_packet.protocol))
+        # inspect(current_packet)
         protocol_rules = ruleset.get(current_packet.protocol)
         if protocol_rules is not None and current_packet.send_ip is not None:
             if current_packet.send_ip == self.network_info.get('external_ip'):
                 return
             for rule in protocol_rules:
-                print('Top')
-                print(rule.send_ip)
-                print(current_packet.send_ip)
+                # print('Top')
+                # print(rule.send_ip)
+                # print(current_packet.send_ip)
                 if rule.send_ip == current_packet.send_ip or rule.send_ip == 'any':
-                    print('one')
+                    # print('one')
                     if rule.source_port == current_packet.source_port or rule.source_port == 'any':
-                        print('two  ')
-                        print(rule.rec_ip)
-                        print(current_packet.rec_ip)
+                        # print('two  ')
+                        # print(rule.rec_ip)
+                        # print(current_packet.rec_ip)
                         if rule.rec_ip == current_packet.rec_ip or rule.rec_ip == 'any':
-                            print('almostMid')
+                            # print('almostMid')
                             if rule.destination_port == current_packet.destination_port or rule.destination_port == 'any':
-                                print('Mid')
+                                # print('Mid')
                                 if rule.options.keys() is not None:
                                     for option in rule.options.keys():
                                         if option == 'flags':
                                             for f in current_packet.flags:
-                                                print('deepest level')
-                                                print(current_packet.flags)
-                                                logging.info('deepest level')
+                                                # print('deepest level')
+                                                # print(current_packet.flags)
+                                                self.log.info('deepest level')
                                                 if f not in rule.flags:
                                                     break
                                         elif rule.options.get(option) != current_packet.__getattribute__(option):
                                             break
+
+                                    # TODO check if this is at the correct spot to flag a packet that matches a given rule
+                                    #  I think this might be in the incorrect spot. Might need to be moved to an else
+                                    #  after the `if f not in rule.flags:` statement
                                     else:
-                                        print('ALERT HANDLER TRIGGERED')
-                                        logging.info('ALerthandler triggers')
+                                        self.log.warning('ALERT HANDLER TRIGGERED ')
                                         self.alert_handler(rule, current_packet)
                                 else:
                                     self.basic_rule_flagged(rule, current_packet)
@@ -62,9 +66,8 @@ class Comparator(multiprocessing.Process):
         print('~~~~~~~~ basic rule flagged ~~~~~~~~')
 
     def alert_handler(self, rule, packet):
-        logging.error('Intrusion Detected from IP {} msg: {}'.format(packet.send_ip, rule.message))
-        logging.error(packet.error(self.time))
-        print('Intrusion Detected from IP {} msg: {}'.format(packet.send_ip, rule.message))
+        self.log.error('Signature match from IP {} msg: {}'.format(packet.send_ip, rule.message))
+        self.log.error(packet.error(self.time))
 
     def stop(self):
         self.on = False

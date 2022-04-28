@@ -27,6 +27,7 @@ class CommonPorts(enum.Enum):
     NTP = '123'
     SNMP = '161'
     HTTPS = '443'
+    SMB = '445'
     REXEC = '512'
     RLOGIN = '513'
     SYSLOG = '514'

@@ -2,35 +2,37 @@ import socket
 import multiprocessing
 import sys
 from signature.objects.packet import Packet
+from rich.console import Console
 
 
 class Sniffer(multiprocessing.Process):
-    def __init__(self, _queue, _time):
+    def __init__(self, _queue, log):
         super(Sniffer, self).__init__()
+        self.console = Console()
         self.socket = None
-        self.time = _time
+        self.log = log
         self.queue = _queue
         self.on = True
         self.raw_data = None
         self.csv_file = None
 
     def run(self):
-        print("~~~~~~~ Sniffer Run ~~~~~~~")
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
-        while self.on:
-            self.raw_data = self.socket.recv(65536)
-            packet = Packet(self.raw_data)
-            packet.parse()
 
-            # For testing, allows to view all traffic coming in and out in the log
-            # logging.basicConfig(filename='logs/{}.logs'.format(self.time), level=logging.INFO)
-            # logging.info(packet)
-            self.queue.put(packet)
+        with self.console.status("[bold green]Sniffing Packets...") as status:
+            while self.on:
+                self.raw_data = self.socket.recv(65536)
+                packet = Packet(self.raw_data, self.log)
+                packet.parse()
+
+                # For testing, allows to view all traffic coming in and out in the log
+                # logging.basicConfig(filename='logs/{}.logs'.format(self.time), level=logging.INFO)
+                # logging.info(packet)
+                self.queue.put(packet)
 
     def stop(self):
         self.on = False
         self.join()
-        # self.terminate()
         self.close()
 
 

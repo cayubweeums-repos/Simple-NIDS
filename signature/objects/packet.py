@@ -9,7 +9,8 @@ from signature.objects.common_ports import get_name_4_value
 
 class Packet:
     # TODO place packets in similar format to that of the dataset or parse the dataset packets into a generic format
-    def __init__(self, data):
+    def __init__(self, data, _log):
+        self.log = _log
         self.flags = []
         self.name = self.__class__.__name__
         self.ip_len = len(data)
@@ -46,10 +47,10 @@ class Packet:
             elif self.protocol == 1:
                 self.protocol_num = self.protocol
                 self.icmp()
-            else:
-                sys.stdout.write("######## UNKNOWN IPV4 PROTOCOL ########")
-        else:
-            sys.stdout.write("######## UNKNOWN ETH PROTOCOL ########")
+        #     else:
+        #         self.log.warning('######## UNKNOWN IPV4 PROTOCOL ########')
+        # else:
+        #     self.log.warning('######## UNKNOWN ETH PROTOCOL ########')
 
     def ipv4(self):
         data = self._data
@@ -210,8 +211,8 @@ class Packet:
             print('\t\tSignature:\n{}'.format(self.signature))
         elif self.protocol == 'UDP':
             print('\tUDP Packet:\n\t\tSource Port: {}, Destination Port: {}, Size: {}'.format(self.source_port,
-                                                                                                     self.destination_port,
-                                                                                                     self.size))
+                                                                                              self.destination_port,
+                                                                                              self.size))
             print('\t\tProto Header: {}'.format(self.proto_header))
             print('\t\tSignature: \n{}'.format(self.signature))
         elif self.protocol == 'ICMP':

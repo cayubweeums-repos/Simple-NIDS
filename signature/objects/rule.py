@@ -25,8 +25,6 @@ class Rule:
         for option in temp_options:
             parsed_options.append(option.split(' ', 1))
         for i in parsed_options:
-            print(i)
-            print(parsed_options)
             for x in i:
                 b = x.find(":")
                 if b >= 0:
@@ -42,7 +40,7 @@ class Rule:
                         self.options[x.replace(':', '')] = i[i.index(x) + 1]
 
     # For testing purposes
-    def print(self):
-        print('{} {} {} {} -> {} {} {}'.format(self.action, self.protocol, self.send_ip, self.source_port, self.rec_ip,
-                                               self.destination_port, self.options))
-        pass
+    # def print(self):
+    #     print('{} {} {} {} -> {} {} {}'.format(self.action, self.protocol, self.send_ip, self.source_port, self.rec_ip,
+    #                                            self.destination_port, self.options))
+    #     pass
