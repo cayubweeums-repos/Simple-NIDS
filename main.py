@@ -18,10 +18,10 @@ from rich.traceback import install
 from rich import pretty
 from rich.console import Console
 
-'''
+"""
 Initialize a few values
 #----------------------------------
-'''
+"""
 console = Console()
 install()
 pretty.install()
@@ -41,13 +41,12 @@ logo = '''
                     |_|                                                               
 '''
 
-'''
+"""
 #----------------------------------
-'''
+"""
 
 
 def main(stdscr):
-    # TODO reformat so the main files goes through the calls. Setup like this to easily test anomaly-based engine
     stdscr.clear()
     os.system('clear')
     if not os.path.exists('logs'):
@@ -139,30 +138,18 @@ def anomaly_based(stdscr, console):
     curses.endwin()
     os.system('clear')
 
-    # TODO implement logic to run the correct items if only testing a model, if making a new model, or if making
-    #  predictions
-    #  i.e. sniffer should only be run if the user selected existing model and no testing
-
     _queue = multiprocessing.Queue()
 
     try:
-        log.info('~~~~~ Begin Sniffing ~~~~~')
-        _sniffer = Sniffer(_queue, _time)
-        _engine = Engine(_queue, _time, training_dataset, testing_dataset, new_model, selected_model)
-        _sniffer.start(), _engine.start()
-        while True:
-            if not KeyboardInterrupt:
-                sleep(1)
-            else:
-                log.info('~~~~~ Stopping IDS ~~~~~')
-                _sniffer.stop()
-                _engine.stop()
-                log.shutdown()
-                sys.exit(0)
-                break
+        _engine = Engine(_queue, log, training_dataset, testing_dataset, new_model, selected_model, testing)
+        sleep(1)
+        _engine.start()
+        sleep(5)
+        while not KeyboardInterrupt:
+            sleep(3)
+
     except KeyboardInterrupt:
         log.info('~~~~~ Stopping IDS ~~~~~')
-        _sniffer.stop()
         _engine.stop()
         log.shutdown()
         sys.exit(0)

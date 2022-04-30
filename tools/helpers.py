@@ -9,11 +9,18 @@ from scapy.all import PcapReader, PcapWriter
 
 
 def format_mac(unparsed_mac):
+    """
+    Formats a MAC address from the bytes in a packet to human-readable
+        and returns it
+    """
     bytes_str = map('{:02X}'.format, unparsed_mac)
     return ':'.join(bytes_str)
 
 
 def get_ruleset():
+    """
+    Acquires all rulesets found in /signature/rules and returns them in a list
+    """
     rulesets = []
     for f in os.listdir(os.getcwd() + '/signature/rules'):
         rulesets.append(f.split('.')[0])
@@ -21,6 +28,9 @@ def get_ruleset():
 
 
 def get_models():
+    """
+    Acquires all models found in /anomaly/models and returns them in a list
+    """
     models = []
     for f in os.listdir(os.getcwd() + '/anomaly/models/lstm'):
         models.append(f.split('.')[0])
@@ -30,6 +40,9 @@ def get_models():
 
 
 def get_datasets():
+    """
+    Acquires all datasets found in /data and returns them in a list
+    """
     datasets = []
     for f in os.listdir(os.getcwd() + '/data/'):
         if f.endswith('.pcap'):
@@ -38,39 +51,53 @@ def get_datasets():
 
 
 def split_selected_dataset(console, dataset):
-    # TODO Need to implement check if the training and testing versions of the requested file already exist before
-    #  continuing with splitting them. If they do exist just return the file locations like normal
-    pkt_num = 0
+    """
+    Splits the selected dataset file in half. First half will be used to train a model
+        the second half will be used to test the model
+    If the prefix 'training_' is found in the data folder along with the selected dataset
+        name then this method does not run and returns the existing file path.
+    """
+    if not os.path.exists(os.path.join(os.getcwd(), 'data/training_' + dataset + '.pcap')):
+        pkt_num = 0
 
-    dataset_filepath = os.path.join(os.getcwd(), 'data/' + dataset + '.pcap')
+        dataset_filepath = os.path.join(os.getcwd(), 'data/' + dataset + '.pcap')
 
-    with console.status("[bold green]Iterating Packets...", spinner='aesthetic') as status:
-        for pkt in PcapReader(dataset_filepath):
-            pkt_num += 1
+        with console.status("[bold green]Iterating Packets...", spinner='aesthetic') as status:
+            for pkt in PcapReader(dataset_filepath):
+                pkt_num += 1
 
-    count = 0
-    training_dataset = PcapWriter(os.path.join(os.getcwd(), 'data/training_' + dataset + '.pcap'),
-                                  append=True, sync=True)
-    testing_dataset = PcapWriter(os.path.join(os.getcwd(), 'data/testing_' + dataset + '.pcap'),
-                                 append=True, sync=True)
+        count = 0
+        training_dataset = PcapWriter(os.path.join(os.getcwd(), 'data/training_' + dataset + '.pcap'),
+                                      append=True, sync=True)
+        testing_dataset = PcapWriter(os.path.join(os.getcwd(), 'data/testing_' + dataset + '.pcap'),
+                                     append=True, sync=True)
 
-    training_dataset_pkts = 0
-    testing_dataset_pkts = 0
+        training_dataset_pkts = 0
+        testing_dataset_pkts = 0
 
-    with console.status("[bold green]Splitting Packets...", spinner='aesthetic') as status:
-        for pkt in PcapReader(dataset_filepath):
-            if count >= pkt_num/2:
-                training_dataset.write(pkt)
-                training_dataset_pkts += 1
-            else:
-                testing_dataset.write(pkt)
-                testing_dataset_pkts += 1
-            count += 1
+        with console.status("[bold green]Splitting Packets...", spinner='aesthetic') as status:
+            for pkt in PcapReader(dataset_filepath):
+                if count >= pkt_num/2:
+                    training_dataset.write(pkt)
+                    training_dataset_pkts += 1
+                else:
+                    testing_dataset.write(pkt)
+                    testing_dataset_pkts += 1
+                count += 1
+        return training_dataset, testing_dataset, training_dataset_pkts, testing_dataset_pkts
 
-    return training_dataset, testing_dataset, training_dataset_pkts, testing_dataset_pkts
+    else:
+        training_dataset = os.path.join(os.getcwd(), 'data/training_' + dataset + '.pcap')
+        testing_dataset = os.path.join(os.getcwd(), 'data/testing_' + dataset + '.pcap')
+
+        return training_dataset, testing_dataset, 0, 0
 
 
 def format_ruleset(selected_ruleset):
+    """
+    Takes all the rules from the selected ruleset and places them into lists based on the
+        protocol they relate to. This speeds up look-ups for larger a ruleset.
+    """
     selected = open(os.getcwd() + '/signature/rules/' + selected_ruleset + '.rules')
     all_rules = []
     for r in selected:

@@ -3,7 +3,7 @@ import logging
 import multiprocessing
 import os
 import time
-
+from tools.sniffer import Sniffer
 import keras.models
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
@@ -14,15 +14,24 @@ from tools import data_parser
 from tools import helpers, packet_signature_pipeline
 
 
+# TODO implement logic to run the correct items if only testing a model, if making a new model, or if making
+#  predictions
+#  i.e. sniffer should only be run if the user selected existing model and no testing
+
 class Engine(multiprocessing.Process):
-    def __init__(self, _queue, _time, training_dataset, testing_dataset, new_model, model_type):
+    def __init__(self, _queue, log, training_dataset, testing_dataset, new_model, selected_model, testing):
         super(Engine, self).__init__()
-        self.time = _time
+        self.log = log
         self.queue = _queue
         self.training_dataset = training_dataset
         self.testing_dataset = testing_dataset
         self.new_model = new_model
-        self.model_type = model_type
+        self.testing = testing
+
+        # If new_model == true this value will either be 'l' or 'n'
+        # If new_model == false then this value will be the file name of the model requested
+        self.selected_model = selected_model
+
         self.feature_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/features.csv')
         self.results_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/results.csv')
         self.model_filepath = None
@@ -37,11 +46,11 @@ class Engine(multiprocessing.Process):
         self.flags = dict()
         self.ymin = []
         self.ymax = []
-        print("~~~~~~~ Engine Init ~~~~~~~")
+
+        self.log.info('~~~~~~~ Engine Init ~~~~~~~')
 
     def run(self):
-        print("~~~~~~~ Engine Run ~~~~~~~")
-        logging.basicConfig(filename='logs/{}.log'.format(self.time), level=logging.INFO)
+        self.log.info('~~~~~~~ Engine Running ~~~~~~~')
         # Temp coverage of all options aiming to add functionality for
         # print('Would you like to train a new model or use a provided one?')
         # print('Make sure the dataset you would like to use is in the data file and type the file name here')
@@ -49,32 +58,45 @@ class Engine(multiprocessing.Process):
         # print('Which model would you like to use?')
         # print('Make sure the model you would like to use is placed in the models/trained/ folder and type the filename
 
-        self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, self.ymin, \
-            self.ymax = data_parser.main(self.training_dataset, self.testing_dataset)
+        if self.new_model:
+            self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, \
+                self.ymin, self.ymax = data_parser.main(self.training_dataset, self.testing_dataset)
 
-        # TODO implement a check that will grab the model selected if it exists or train it if it doesnt exist?
-        if self.model_type == 'n':
-            self.train_naive()
-        else:
-            print("~~~~~~~ Engine Train ~~~~~~~")
-            self.train_lstm()
-
-        """
-            Main Loop
-        """
-        while self.on:
-            # print('Entering PREDICTION')
-            current_packet = self.queue.get()
-            if current_packet.protocol == 'TCP' or current_packet.protocol == 'UDP' or current_packet.protocol == 'ICMP':
-                # print('\nPacket Signature being predicted:\n\t\t{}'.format(current_packet.signature))
-                # print('\nPacket protocol:\n\t\t{}'.format(current_packet.protocol))
-                self.predict(packet_signature_pipeline.get_normalized_packet_features(current_packet.signature,
-                                                                                      self.protocol_type, self.service,
-                                                                                      self.flags, self.ymin, self.ymax),
-                             current_packet)
+            if self.selected_model == 'n':
+                self.log.info('~~~~~~~ Engine Training ~~~~~~~')
+                self.train_naive()
             else:
-                print('Non TCP UDP or ICMP packet ignored')
-                # current_packet.print()
+                self.log.info('~~~~~~~ Engine Training ~~~~~~~')
+                self.train_lstm()
+
+        elif self.testing:
+            if 'lstm' in self.selected_model:
+                self.test_lstm()
+            else:
+                self.test_naive()
+
+        else:
+            """
+                Prediction Loop
+            """
+            _sniffer = Sniffer(self.queue, self.log)
+            self.log.info('~~~~~ Sniffer Init ~~~~~')
+            _sniffer.start()
+            while self.on:
+                # print('Entering PREDICTION')
+                current_packet = self.queue.get()
+                if current_packet.protocol == 'TCP' or current_packet.protocol == 'UDP' \
+                        or current_packet.protocol == 'ICMP':
+                    # print('\nPacket Signature being predicted:\n\t\t{}'.format(current_packet.signature))
+                    # print('\nPacket protocol:\n\t\t{}'.format(current_packet.protocol))
+                    self.predict(packet_signature_pipeline.get_normalized_packet_features(current_packet.signature,
+                                                                                          self.protocol_type,
+                                                                                          self.service, self.flags,
+                                                                                          self.ymin, self.ymax),
+                                 current_packet)
+                else:
+                    self.log.info('Non TCP, UDP, or ICMP packet ignored')
+                    # current_packet.print()
 
     def stop(self):
         self.on = False
@@ -92,6 +114,10 @@ class Engine(multiprocessing.Process):
         # score = accuracy_score(self.y_test, predict)
         #
         # print('Accuracy Score = {}'.format(score))
+
+    def test_naive(self):
+        while True:
+            self.log.error("Beep Boop Testing Naive model even though it isn't even functional yet Beep Boop")
 
     def train_lstm(self):
         # Train and fit a recurrent Long Short-Term Memory model to the data
@@ -150,6 +176,9 @@ class Engine(multiprocessing.Process):
         print('############ Model Saved ############\n{}'.format(self.model_filepath))
         return
 
+    def test_lstm(self):
+        self.log.error("Beep Boop Testing LSTM model Beep Boop")
+
     def predict(self, current_packet_features, current_packet):
         if self.model is None:
             self.model = keras.models.load_model(self.model_filepath)
@@ -166,5 +195,3 @@ class Engine(multiprocessing.Process):
             logging.info('~~~~~~~~~~~~~~~~~~~ ANOMALY DETECTED ~~~~~~~~~~~~~~~~~~~')
             logging.info('\nAnomalies in prediction: {}'.format(prediction))
             current_packet.log(self.time)
-
-
