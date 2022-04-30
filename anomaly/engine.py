@@ -10,19 +10,18 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score
 from keras.models import Sequential
 from keras.layers import LSTM, Dropout, Dense, Activation
-
+from tools import data_parser
 from tools import helpers, packet_signature_pipeline
 
 
 class Engine(multiprocessing.Process):
-    def __init__(self, _queue, _time, feature_type, iter_num, training_dataset, testing_dataset, model_type):
+    def __init__(self, _queue, _time, training_dataset, testing_dataset, new_model, model_type):
         super(Engine, self).__init__()
         self.time = _time
         self.queue = _queue
-        self.feature_type = feature_type
-        self.iter_num = iter_num
         self.training_dataset = training_dataset
         self.testing_dataset = testing_dataset
+        self.new_model = new_model
         self.model_type = model_type
         self.feature_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/features.csv')
         self.results_filepath = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/results.csv')
@@ -51,7 +50,7 @@ class Engine(multiprocessing.Process):
         # print('Make sure the model you would like to use is placed in the models/trained/ folder and type the filename
 
         self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, self.ymin, \
-            self.ymax = helpers.get_datasets(self.training_dataset, self.testing_dataset)
+            self.ymax = data_parser.main(self.training_dataset, self.testing_dataset)
 
         # TODO implement a check that will grab the model selected if it exists or train it if it doesnt exist?
         if self.model_type == 'n':

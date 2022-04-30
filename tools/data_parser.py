@@ -213,7 +213,9 @@ def extract_packet_features(file_loc, filename, protocol_type, service, flag):
 # --------------------------------------------------
 
 def main(training_file_loc, testing_file_loc):
-    # TODO implement loop to handle all pcap files
+    # TODO handle if the .csv files have already been created for these files and there is no need to run data_parser.py
+    #  Check if the training_sets and testing_sets folders exists then check if they contain .csv files with the same
+    #  names as the parameter files passed to this function
     # TODO implement way to call the data parser from main and pass data locations here
     training_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training.csv')
     testing_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/testing.csv')

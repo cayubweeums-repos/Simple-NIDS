@@ -5,3 +5,4 @@ keras~=2.4.3
 scapy~=2.4.3
 pyshark~=0.4.3
 rich~=12.2.0
+keyboard~=0.13.5

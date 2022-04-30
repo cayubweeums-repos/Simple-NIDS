@@ -66,46 +66,100 @@ def main(stdscr):
     if detection_method == 1:
         signature_based(stdscr, hostname, external_ip)
     elif detection_method == 0:
-        anomaly_based()
+        anomaly_based(stdscr, console)
     else:
         console.print("Goodbye :fire:", style="bold green")
         sleep(2)
         sys.exit(0)
 
 
-def anomaly_based():
+def anomaly_based(stdscr, console):
     # All values for anomaly_based detection set to static values due to limited functionality implemented.
     # The values are inplace and the methods are abstracted enough to allow for implementation of various diff values
     # here.
     # TODO uncomment dataset and feature set to prompt user
 
-    # dataset = input('Select dataset (Only one dataset allowed therefore it is statically set later): \n\t\tnsl_kdd')
-    training_dataset = os.path.join(os.path.dirname(__file__), 'data/def_con_0')
-    testing_dataset = os.path.join(os.path.dirname(__file__), 'data/def_con_1')
+    new_model = False
+    testing = False
+    selected_model = ''
+    training_dataset = ''
+    testing_dataset = ''
 
-    # feature_type = int(input('Select running type: \n\t\t0. Binary\t\t1. Multi\n> '))
-    feature_type = 'Binary'
+    train_menu = Menu(stdscr, 'Would you like to train a new model or use an existing one?', ['Train a new model',
+                                                                                              'Use existing'])
+    if train_menu.get_selection() == 0:
+        new_model = True
+        model_selection_menu = Menu(stdscr, 'What type of model would you like to train?', ['Naive Bayes', 'LSTM'])
+        if model_selection_menu.get_selection() == 0:
+            selected_model = 'n'
+        else:
+            selected_model = 'l'
+        datasets = helpers.get_datasets()
+        dataset_selection_menu = Menu(stdscr, 'Which dataset would you like to train and test on?',
+                                      datasets)
+        selected_dataset = datasets[dataset_selection_menu.get_selection()]
 
-    # model = input('Select model: \n\t\tNaive Bayes [n]\t\tLSTM [l]\n> ')
-    model = 'l'
+        stdscr.clear()
+        stdscr.refresh()
+        curses.endwin()
+        os.system('clear')
 
-    # iter_num = int(input('Type num of iterations: \n\t\t1\t\t15\t\t50\n> '))
-    iter_num = 1
+        training_dataset, testing_dataset, train_pkts, test_pkts = helpers.split_selected_dataset(console,
+                                                                                                  selected_dataset)
 
-    # _queue = multiprocessing.Queue()
-    # _time = datetime.datetime.now()
+        stdscr.clear()
+        stdscr.addstr(f'train packet num = {train_pkts}    test packet num= {test_pkts}')
+        stdscr.refresh()
+        stdscr.getch()
 
-    # _engine.run()
+    else:
+        models = helpers.get_models()
+        model_selection_menu = Menu(stdscr, 'Which existing model would you like to predict with?',
+                                    models)
+        selected_model = models[model_selection_menu.get_selection()]
+        testing_selection = Menu(stdscr, 'Would you like to Test or Predict with your selected model?',
+                                 ['Test', 'Predict'])
+        if testing_selection.get_selection() == 0:
+            testing = True
+            datasets = helpers.get_datasets()
+            dataset_selection_menu = Menu(stdscr, 'Which dataset would you like to train and test on?',
+                                          datasets)
+            selected_dataset = datasets[dataset_selection_menu.get_selection()]
+
+            stdscr.clear()
+            stdscr.refresh()
+            curses.endwin()
+            os.system('clear')
+
+            training_dataset, testing_dataset, train_pkts, test_pkts = helpers.split_selected_dataset(console,
+                                                                                                      selected_dataset)
+
+    stdscr.clear()
+    stdscr.refresh()
+    curses.endwin()
+    os.system('clear')
+
+    # TODO implement logic to run the correct items if only testing a model, if making a new model, or if making
+    #  predictions
+    #  i.e. sniffer should only be run if the user selected existing model and no testing
 
     _queue = multiprocessing.Queue()
 
     try:
         log.info('~~~~~ Begin Sniffing ~~~~~')
         _sniffer = Sniffer(_queue, _time)
-        _engine = Engine(_queue, _time, feature_type, iter_num, training_dataset, testing_dataset, model)
+        _engine = Engine(_queue, _time, training_dataset, testing_dataset, new_model, selected_model)
         _sniffer.start(), _engine.start()
         while True:
-            sleep(1)
+            if not KeyboardInterrupt:
+                sleep(1)
+            else:
+                log.info('~~~~~ Stopping IDS ~~~~~')
+                _sniffer.stop()
+                _engine.stop()
+                log.shutdown()
+                sys.exit(0)
+                break
     except KeyboardInterrupt:
         log.info('~~~~~ Stopping IDS ~~~~~')
         _sniffer.stop()
@@ -146,7 +200,15 @@ def signature_based(stdscr, hostname, external_ip):
         _sniffer.start(), _comparator.start()
 
         while True:
-            sleep(1)
+            if not KeyboardInterrupt:
+                sleep(1)
+            else:
+                log.info('~~~~~ Stopping IDS ~~~~~')
+                _sniffer.stop()
+                _comparator.stop()
+                log.shutdown()
+                sys.exit(0)
+                break
     except KeyboardInterrupt:
         log.info('~~~~~ Stopping IDS ~~~~~')
         _sniffer.stop()

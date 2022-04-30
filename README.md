@@ -16,7 +16,7 @@ I used for testing. Below are the assumptions the code-base makes:
 
 ## Installation 
 Simply grab the zip, extract it, open in your favorite IDE and follow the prompts
-- Use `pip3 install requirements.txt` when in the project to get the dependencies
+- Use `pip3 install -r requirements.txt` when in the project to get the dependencies
 
 ## Running
 Needs to be run on a linux distro. Windows does not allow for the socket module from python to grab packets at a low 

@@ -5,6 +5,7 @@ import numpy as np
 from signature.objects.rule import Rule
 from signature.objects.common_ports import CommonPorts, get_name_4_value
 from tools import data_parser
+from scapy.all import PcapReader, PcapWriter
 
 
 def format_mac(unparsed_mac):
@@ -17,6 +18,56 @@ def get_ruleset():
     for f in os.listdir(os.getcwd() + '/signature/rules'):
         rulesets.append(f.split('.')[0])
     return rulesets
+
+
+def get_models():
+    models = []
+    for f in os.listdir(os.getcwd() + '/anomaly/models/lstm'):
+        models.append(f.split('.')[0])
+    for f in os.listdir(os.getcwd() + '/anomaly/models/naive_bayes'):
+        models.append(f.split('.')[0])
+    return models
+
+
+def get_datasets():
+    datasets = []
+    for f in os.listdir(os.getcwd() + '/data/'):
+        if f.endswith('.pcap'):
+            datasets.append(f.split('.')[0])
+    return datasets
+
+
+def split_selected_dataset(console, dataset):
+    # TODO Need to implement check if the training and testing versions of the requested file already exist before
+    #  continuing with splitting them. If they do exist just return the file locations like normal
+    pkt_num = 0
+
+    dataset_filepath = os.path.join(os.getcwd(), 'data/' + dataset + '.pcap')
+
+    with console.status("[bold green]Iterating Packets...", spinner='aesthetic') as status:
+        for pkt in PcapReader(dataset_filepath):
+            pkt_num += 1
+
+    count = 0
+    training_dataset = PcapWriter(os.path.join(os.getcwd(), 'data/training_' + dataset + '.pcap'),
+                                  append=True, sync=True)
+    testing_dataset = PcapWriter(os.path.join(os.getcwd(), 'data/testing_' + dataset + '.pcap'),
+                                 append=True, sync=True)
+
+    training_dataset_pkts = 0
+    testing_dataset_pkts = 0
+
+    with console.status("[bold green]Splitting Packets...", spinner='aesthetic') as status:
+        for pkt in PcapReader(dataset_filepath):
+            if count >= pkt_num/2:
+                training_dataset.write(pkt)
+                training_dataset_pkts += 1
+            else:
+                testing_dataset.write(pkt)
+                testing_dataset_pkts += 1
+            count += 1
+
+    return training_dataset, testing_dataset, training_dataset_pkts, testing_dataset_pkts
 
 
 def format_ruleset(selected_ruleset):
@@ -48,13 +99,6 @@ def set_network(local_ip, external_ip):
     local_range = '.'.join(local_ip.split('.')[:3])
     Networks = {'local_range': local_range, 'local_ip': local_ip, 'external_ip': external_ip}
     return Networks
-
-
-def get_datasets(training_file_loc, testing_file_loc):
-    # TODO handle if the files have already been created and there is no need to run data_parser.py
-    # if os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training_features.csv')):
-    #     return np.loadtxt()
-    return data_parser.main(training_file_loc, testing_file_loc)
 
 
 def correct_timestamp(old_ts):
@@ -224,7 +268,6 @@ def get_normalized_packet_features(features, results, _protocol_type, _service, 
     for i in range(0, len(keys)):
         label[keys[i]] = [int(i)]
 
-    # TODO need to reformat below possibly
     # train data
     numericalized_train_data_features = [get_feature_value(
         x, protocol_type, service, flag) for x in features]

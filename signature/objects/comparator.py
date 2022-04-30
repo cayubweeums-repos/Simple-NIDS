@@ -45,9 +45,7 @@ class Comparator(multiprocessing.Process):
                                     for option in rule.options.keys():
                                         if option == 'flags':
                                             for f in current_packet.flags:
-                                                # print('deepest level')
-                                                # print(current_packet.flags)
-                                                self.log.info('deepest level')
+                                                # self.log.info('deepest level')
                                                 if f not in rule.flags:
                                                     break
                                         elif rule.options.get(option) != current_packet.__getattribute__(option):
@@ -57,7 +55,7 @@ class Comparator(multiprocessing.Process):
                                     #  I think this might be in the incorrect spot. Might need to be moved to an else
                                     #  after the `if f not in rule.flags:` statement
                                     else:
-                                        self.log.warning('ALERT HANDLER TRIGGERED ')
+                                        self.log.warning('######## ALERT HANDLER TRIGGERED ########')
                                         self.alert_handler(rule, current_packet)
                                 else:
                                     self.basic_rule_flagged(rule, current_packet)
@@ -67,7 +65,7 @@ class Comparator(multiprocessing.Process):
 
     def alert_handler(self, rule, packet):
         self.log.error('Signature match from IP {} msg: {}'.format(packet.send_ip, rule.message))
-        self.log.error(packet.error(self.time))
+        packet.error(self.log)
 
     def stop(self):
         self.on = False
