@@ -93,6 +93,14 @@ def split_selected_dataset(console, dataset):
         return training_dataset, testing_dataset, 0, 0
 
 
+def get_filename(filepath):
+    split_filepath = filepath.split('/')
+    for section in split_filepath:
+        if '.' in section:
+            split_file = section.split('.')
+            return split_file[0]
+
+
 def format_ruleset(selected_ruleset):
     """
     Takes all the rules from the selected ruleset and places them into lists based on the

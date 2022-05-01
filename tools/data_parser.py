@@ -198,7 +198,8 @@ def extract_packet_features(file_loc, filename, protocol_type, service, flag):
     dirty_training_results = [x[16:17] for x in dirty_training_features]
     dirty_training_features = [x[0:16] for x in dirty_training_features]
     normalized_features, normalized_results, protocol_type, service, flag, ymin, ymax = \
-        helpers.get_normalized_packet_features(dirty_training_features, dirty_training_results, protocol_type, service, flag)
+        helpers.get_normalized_packet_features(dirty_training_features, dirty_training_results, protocol_type, service,
+                                               flag)
 
     features_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/' + filename +
                                       '_features.csv')
@@ -213,24 +214,26 @@ def extract_packet_features(file_loc, filename, protocol_type, service, flag):
 # --------------------------------------------------
 
 def main(training_file_loc, testing_file_loc):
-    # TODO handle if the .csv files have already been created for these files and there is no need to run data_parser.py
-    #  Check if the training_sets and testing_sets folders exists then check if they contain .csv files with the same
-    #  names as the parameter files passed to this function
-    # TODO implement way to call the data parser from main and pass data locations here
-    training_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training.csv')
-    testing_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/testing.csv')
-    if not os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training.csv')):
+    base_file_name = helpers.get_filename(training_file_loc)
+
+    training_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training_'
+                                    + base_file_name + '.csv')
+    testing_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/testing_' +
+                                   base_file_name + '.csv')
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training_' +
+                                                                        base_file_name +
+                                                                        '.csv')):
         pcap2csv(training_file_loc, training_csv_loc)
         pcap2csv(testing_file_loc, testing_csv_loc)
 
     training_features, training_results, protocol_type, service, flag, ymin, ymax = \
-        extract_packet_features(training_csv_loc, 'training', dict(), dict(), dict())
+        extract_packet_features(training_csv_loc, 'training_' + base_file_name, dict(), dict(), dict())
 
     testing_features, testing_results, protocol_typ, servic, fla, min, max = \
-        extract_packet_features(testing_csv_loc, 'testing', protocol_type, service, flag)
+        extract_packet_features(testing_csv_loc, 'testing_' + base_file_name, protocol_type, service, flag)
 
-    return training_features, training_results, testing_features, testing_results, \
-           protocol_type, service, flag, ymin, ymax
+    return training_features, training_results, testing_features, testing_results, protocol_type, service, \
+           flag, ymin, ymax
 
 
 # --------------------------------------------------

@@ -9,7 +9,7 @@ This is an implementation of a simple Network Intrusion Detection System
 This code-base makes a few assumptions currently. It has not been abstracted or implemented in a generic enough sense to
 accommodate a wide array of data. Currently, I would feel uncomfortable with the results of any data set besides the one
 I used for testing. Below are the assumptions the code-base makes:
-- You are using the 'DEF CON 23 ICS Village.pcap' file from [netresec.com](https://media.defcon.org/DEF CON 23/DEF CON 23 villages/DEF CON 23 ics village/DEF CON 23 ICS Village packet captures.rar) 
+- You are using the 'DEF CON 23 ICS Village.pcap' file from [netresec.com](https://media.defcon.org/DEF%20CON%2023/DEF%20CON%2023%20villages/DEF%20CON%2023%20ics%20village/DEF%20CON%2023%20ICS%20Village%20packet%20captures.rar) 
 - The attacks being sent to your network are relatively basic
   - i.e. Nmap portscans and DoS sprays
 - There are no files in the data/training_sets folder. This means the program needs to parse the specific pcap used and create those .csv files for you.

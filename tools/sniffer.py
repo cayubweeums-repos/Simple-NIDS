@@ -1,6 +1,7 @@
 import socket
 import multiprocessing
 import sys
+from time import sleep
 from signature.objects.packet import Packet
 from rich.console import Console
 
@@ -12,11 +13,13 @@ class Sniffer(multiprocessing.Process):
         self.socket = None
         self.log = log
         self.queue = _queue
-        self.on = True
+        self.on = False
         self.raw_data = None
         self.csv_file = None
 
     def run(self):
+        while not self.on:
+            sleep(1)
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
 
         with self.console.status("[bold green]Sniffing Packets...") as status:
@@ -34,6 +37,9 @@ class Sniffer(multiprocessing.Process):
         self.on = False
         self.join()
         self.close()
+
+    def turn_on(self):
+        self.on = True
 
 
     # def data_parser(self, training_pcap_loc):

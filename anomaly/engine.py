@@ -19,10 +19,11 @@ from tools import helpers, packet_signature_pipeline
 #  i.e. sniffer should only be run if the user selected existing model and no testing
 
 class Engine(multiprocessing.Process):
-    def __init__(self, _queue, log, training_dataset, testing_dataset, new_model, selected_model, testing):
+    def __init__(self, _queue, log, sniffer, training_dataset, testing_dataset, new_model, selected_model, testing):
         super(Engine, self).__init__()
         self.log = log
         self.queue = _queue
+        self.sniffer = sniffer
         self.training_dataset = training_dataset
         self.testing_dataset = testing_dataset
         self.new_model = new_model
@@ -61,7 +62,6 @@ class Engine(multiprocessing.Process):
         if self.new_model:
             self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, \
                 self.ymin, self.ymax = data_parser.main(self.training_dataset, self.testing_dataset)
-
             if self.selected_model == 'n':
                 self.log.info('~~~~~~~ Engine Training ~~~~~~~')
                 self.train_naive()
@@ -79,9 +79,8 @@ class Engine(multiprocessing.Process):
             """
                 Prediction Loop
             """
-            _sniffer = Sniffer(self.queue, self.log)
+            self.sniffer.turn_on()
             self.log.info('~~~~~ Sniffer Init ~~~~~')
-            _sniffer.start()
             while self.on:
                 # print('Entering PREDICTION')
                 current_packet = self.queue.get()

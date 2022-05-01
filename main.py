@@ -141,9 +141,9 @@ def anomaly_based(stdscr, console):
     _queue = multiprocessing.Queue()
 
     try:
-        _engine = Engine(_queue, log, training_dataset, testing_dataset, new_model, selected_model, testing)
-        sleep(1)
-        _engine.start()
+        _sniffer = Sniffer(_queue, log)
+        _engine = Engine(_queue, log, _sniffer, training_dataset, testing_dataset, new_model, selected_model, testing)
+        _engine.start(), _sniffer.start()
         sleep(5)
         while not KeyboardInterrupt:
             sleep(3)
