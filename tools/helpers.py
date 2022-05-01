@@ -98,6 +98,9 @@ def get_filename(filepath):
     for section in split_filepath:
         if '.' in section:
             split_file = section.split('.')
+            if 'training_' in split_file[0]:
+                base_filename = split_file[0].split('training_')
+                return base_filename[1]
             return split_file[0]
 
 
@@ -152,11 +155,13 @@ def correct_timestamp(old_ts):
     return all_pieces[1]
 
 
-def get_alert_pkts():
+def get_alert_pkts(console):
     alert_pkts = []
-    for alert in get_file_lines('Z:/main/Temp_Code_Loc/Simple-NIDS/data/alerts_0.csv'):
-        split_line = get_csvfile_elements(alert)
-        alert_pkts.append(split_line[0].replace(" ", ""))
+    with console.status("[bold green]Iterating alert packets for training and testing...", spinner='aesthetic') as status:
+        for alert_csv in list(filter(lambda f: f.endswith('.csv'), os.path.join(os.getcwd(), 'data/'))):
+            for alert in get_file_lines(os.path.join(os.getcwd(), 'data/' + alert_csv)):
+                split_line = get_csvfile_elements(alert)
+                alert_pkts.append(split_line[0].replace(" ", ""))
     return alert_pkts
 
 

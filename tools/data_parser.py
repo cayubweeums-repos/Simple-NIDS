@@ -43,7 +43,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     """
     ether_pkt_sc = Ether(pkt_sc)
     if ether_pkt_sc.type != 0x800:
-        print('###Ignoring non-IP packet###')
+        # print('###Ignoring non-IP packet###')
         return False
 
     ip_pkt_sc = ether_pkt_sc[IP]  # <<<< Assuming Ethernet + IPv4 here
@@ -146,7 +146,7 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv, alert_pkts):
     # --------------------------------------------------
 
 
-def pcap2csv(in_pcap, out_csv):
+def pcap2csv(console, in_pcap, out_csv):
     """Main entry function called from main to process the pcap and
     generate the csv file.
     in_pcap = name of the input pcap file (guaranteed to exist)
@@ -161,23 +161,36 @@ def pcap2csv(in_pcap, out_csv):
     # "Standard query 0xf3de A www.cisco.com", "Client Hello" etc.) are
     # made available.
     pcap_pyshark = pyshark.FileCapture(in_pcap)
-    print('pre load packets')
-    pcap_pyshark.load_packets()
-    pcap_pyshark.reset()
+
+    with console.status("[bold green]Pyshark Loading Packets...", spinner='aesthetic') as status:
+        pcap_pyshark.load_packets()
+
+    with console.status("[bold green]Pyshark resetting...", spinner='aesthetic') as status:
+        pcap_pyshark.reset()
 
     frame_num = 0
     ignored_packets = 0
+
+    os.makedirs(os.path.dirname(out_csv), exist_ok=True)
+
+    os.system('clear')
+
     with open(out_csv, 'w') as fh_csv:
         # Open the pcap file with scapy's RawPcapReader, and iterate over
         # each packet. In each iteration get the PyShark packet as well,
         # and then call render_csv_row() with both representations to generate
         # the CSV row.
-        alert_pkts = helpers.get_alert_pkts()
+        alert_pkts = helpers.get_alert_pkts(console)
         for (pkt_scapy, _) in RawPcapReader(in_pcap):
             try:
                 pkt_pyshark = pcap_pyshark.next_packet()
 
                 frame_num += 1
+
+                print(pkt_pyshark)
+                print(pkt_scapy)
+                sys.exit(0)
+
                 # if frame_num % 2 == 0:
                 #     print(frame_num)
                 if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv, alert_pkts):
@@ -187,8 +200,8 @@ def pcap2csv(in_pcap, out_csv):
                 # exit before this happens.
                 break
 
-    print('{} packets read, {} packets not written to CSV'.
-          format(frame_num, ignored_packets))
+    console.print(f'{frame_num} packets read, {ignored_packets} packets not written to CSV',
+                  style='bold black on green')
 
 
 # --------------------------------------------------
@@ -201,10 +214,9 @@ def extract_packet_features(file_loc, filename, protocol_type, service, flag):
         helpers.get_normalized_packet_features(dirty_training_features, dirty_training_results, protocol_type, service,
                                                flag)
 
-    features_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/' + filename +
-                                      '_features.csv')
+    features_file_path = os.path.join(os.getcwd(), 'data/training_sets/' + filename + '_features.csv')
     np.savetxt(features_file_path, normalized_features, delimiter=",")
-    results_file_path = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/' + filename +
+    results_file_path = os.path.join(os.getcwd(), 'data/training_sets/' + filename +
                                      '_results.csv')
     np.savetxt(results_file_path, normalized_results, delimiter=",")
 
@@ -213,24 +225,26 @@ def extract_packet_features(file_loc, filename, protocol_type, service, flag):
 
 # --------------------------------------------------
 
-def main(training_file_loc, testing_file_loc):
+def main(console, training_file_loc, testing_file_loc):
     base_file_name = helpers.get_filename(training_file_loc)
 
-    training_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training_'
+    training_csv_loc = os.path.join(os.getcwd(), 'data/training_sets/training_'
                                     + base_file_name + '.csv')
-    testing_csv_loc = os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/testing_' +
+    testing_csv_loc = os.path.join(os.getcwd(), 'data/training_sets/testing_' +
                                    base_file_name + '.csv')
-    if not os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'data/training_sets/training_' +
-                                                                        base_file_name +
-                                                                        '.csv')):
-        pcap2csv(training_file_loc, training_csv_loc)
-        pcap2csv(testing_file_loc, testing_csv_loc)
+    if not os.path.exists(os.path.join(os.getcwd(), 'data/training_sets/training_' + base_file_name + '.csv')):
+        pcap2csv(console, training_file_loc, training_csv_loc)
+        pcap2csv(console, testing_file_loc, testing_csv_loc)
 
-    training_features, training_results, protocol_type, service, flag, ymin, ymax = \
-        extract_packet_features(training_csv_loc, 'training_' + base_file_name, dict(), dict(), dict())
+    with console.status("[bold green]Extracting training features and results...", spinner='aesthetic') \
+            as status:
+        training_features, training_results, protocol_type, service, flag, ymin, ymax = \
+            extract_packet_features(training_csv_loc, 'training_' + base_file_name, dict(), dict(), dict())
 
-    testing_features, testing_results, protocol_typ, servic, fla, min, max = \
-        extract_packet_features(testing_csv_loc, 'testing_' + base_file_name, protocol_type, service, flag)
+    with console.status("[bold green]Extracting testing features and results...", spinner='aesthetic') \
+            as status:
+        testing_features, testing_results, protocol_typ, servic, fla, min, max = \
+            extract_packet_features(testing_csv_loc, 'testing_' + base_file_name, protocol_type, service, flag)
 
     return training_features, training_results, testing_features, testing_results, protocol_type, service, \
            flag, ymin, ymax

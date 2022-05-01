@@ -7,9 +7,9 @@ from rich.console import Console
 
 
 class Sniffer(multiprocessing.Process):
-    def __init__(self, _queue, log):
+    def __init__(self, _queue, log, console):
         super(Sniffer, self).__init__()
-        self.console = Console()
+        self.console = console
         self.socket = None
         self.log = log
         self.queue = _queue

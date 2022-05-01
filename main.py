@@ -107,7 +107,7 @@ def anomaly_based(stdscr, console):
                                                                                                   selected_dataset)
 
         stdscr.clear()
-        stdscr.addstr(f'train packet num = {train_pkts}    test packet num= {test_pkts}')
+        stdscr.addstr(f'train packet num = {train_pkts}    test packet num= {test_pkts}\n Press the any key to continue')
         stdscr.refresh()
         stdscr.getch()
 
@@ -141,9 +141,10 @@ def anomaly_based(stdscr, console):
     _queue = multiprocessing.Queue()
 
     try:
-        _sniffer = Sniffer(_queue, log)
-        _engine = Engine(_queue, log, _sniffer, training_dataset, testing_dataset, new_model, selected_model, testing)
-        _engine.start(), _sniffer.start()
+        # _sniffer = Sniffer(_queue, log, console)
+        _engine = Engine(_queue, log, console, training_dataset, testing_dataset, new_model, selected_model,
+                         testing)
+        _engine.start()
         sleep(5)
         while not KeyboardInterrupt:
             sleep(3)

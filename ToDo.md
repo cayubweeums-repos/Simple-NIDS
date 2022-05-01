@@ -26,16 +26,15 @@
           - `include $RULE_PATH/{rule files added previously}`
       - In terminal run the following to have snort generate an alert file based on a .pcap:
         - run `sudo snort -c /etc/snort/snort.conf -r {name or file path to .pcap} > snort-output.log > alerts.csv`
+      - IDK where to put this but I added the filter `ip.dst` to wireshark and then exported
+        - This is the data set i used to train the models as the program only handles ip packets and this filters everything else out
   - Under assumptions
     - I am assuming that if you are using a different .pcap than the one provided that you have used snort to identify which packets in your dataset are malicious and placed those packets in a .csv file named `alerts.csv`
     - I am also assuming this file is in the `data/` folder
 
 ### Anomaly Based detection
-- Working on the decision path for creating a new model in the engine
-  - I just changed the file names for the .csv's that are created via the data_parser.py
-    - Make sure these are still functional after this change
-  - Implement cleaner menus/displays so that we can see what is happening kinda
-  - Ensure logic validity/correctness/make sure no bugs
+- Currently, ensuring that the timestamps for the training/testing packets are in the same format as the alert csv lines
+  - I am assuming these are off due to the fact that the csv files exclusively have the label 'normal'
 - Next steps
   - Add observability to testing sections
   - Add realtime observability to prediction section

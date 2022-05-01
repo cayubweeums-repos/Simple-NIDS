@@ -2,6 +2,7 @@ import datetime
 import logging
 import multiprocessing
 import os
+import sys
 import time
 from tools.sniffer import Sniffer
 import keras.models
@@ -12,6 +13,9 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dropout, Dense, Activation
 from tools import data_parser
 from tools import helpers, packet_signature_pipeline
+from rich.traceback import install
+from rich import pretty
+from tools.sniffer import Sniffer
 
 
 # TODO implement logic to run the correct items if only testing a model, if making a new model, or if making
@@ -19,11 +23,16 @@ from tools import helpers, packet_signature_pipeline
 #  i.e. sniffer should only be run if the user selected existing model and no testing
 
 class Engine(multiprocessing.Process):
-    def __init__(self, _queue, log, sniffer, training_dataset, testing_dataset, new_model, selected_model, testing):
+    def __init__(self, _queue, log, console, training_dataset, testing_dataset, new_model, selected_model,
+                 testing):
         super(Engine, self).__init__()
+
+        install()
+        pretty.install()
+
         self.log = log
         self.queue = _queue
-        self.sniffer = sniffer
+        self.console = console
         self.training_dataset = training_dataset
         self.testing_dataset = testing_dataset
         self.new_model = new_model
@@ -48,6 +57,12 @@ class Engine(multiprocessing.Process):
         self.ymin = []
         self.ymax = []
 
+        if not new_model:
+            if 'lstm' in self.selected_model:
+                self.model_filepath = os.path.join(os.getcwd(), 'anomaly/models/lstm/' + self.selected_model + '.h5')
+            else:
+                self.model_filepath = os.path.join(os.getcwd(), 'anomaly/models/naive/' + self.selected_model + '.h5')
+
         self.log.info('~~~~~~~ Engine Init ~~~~~~~')
 
     def run(self):
@@ -61,25 +76,29 @@ class Engine(multiprocessing.Process):
 
         if self.new_model:
             self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, \
-                self.ymin, self.ymax = data_parser.main(self.training_dataset, self.testing_dataset)
+                self.ymin, self.ymax = data_parser.main(self.console, self.training_dataset, self.testing_dataset)
             if self.selected_model == 'n':
                 self.log.info('~~~~~~~ Engine Training ~~~~~~~')
                 self.train_naive()
+                self.stop(None)
             else:
                 self.log.info('~~~~~~~ Engine Training ~~~~~~~')
                 self.train_lstm()
-
+                self.stop(None)
         elif self.testing:
             if 'lstm' in self.selected_model:
                 self.test_lstm()
+                self.stop(None)
             else:
                 self.test_naive()
-
+                self.stop(None)
         else:
             """
                 Prediction Loop
             """
-            self.sniffer.turn_on()
+            sniffer = Sniffer(self.queue, self.log, self.console)
+            sniffer.run()
+            sniffer.turn_on()
             self.log.info('~~~~~ Sniffer Init ~~~~~')
             while self.on:
                 # print('Entering PREDICTION')
@@ -97,8 +116,10 @@ class Engine(multiprocessing.Process):
                     self.log.info('Non TCP, UDP, or ICMP packet ignored')
                     # current_packet.print()
 
-    def stop(self):
+    def stop(self, sniffer):
         self.on = False
+        if sniffer is not None:
+            sniffer.stop()
         self.join()
         self.close()
 
@@ -126,7 +147,7 @@ class Engine(multiprocessing.Process):
 
         self.x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, self.x_test.shape[1]))
         self.y_test = np.reshape(self.y_test, (self.y_test.shape[0]))
-        print(self.x_test.shape)
+        # print(self.x_test.shape)
 
         # this may be causing the issues
         shapes = (self.x_train.shape[1], self.x_train.shape[2])
@@ -177,6 +198,28 @@ class Engine(multiprocessing.Process):
 
     def test_lstm(self):
         self.log.error("Beep Boop Testing LSTM model Beep Boop")
+        self.log.info(f'{self.model_filepath}')
+        self.model = keras.models.load_model(self.model_filepath)
+
+        self.x_train, self.y_train, self.x_test, self.y_test, self.protocol_type, self.service, self.flags, \
+            self.ymin, self.ymax = data_parser.main(self.console, self.training_dataset, self.testing_dataset)
+
+        self.x_test = np.reshape(self.x_test, (self.x_test.shape[0], 1, self.x_test.shape[1]))
+        self.y_test = np.reshape(self.y_test, (self.y_test.shape[0]))
+
+        loss, accuracy = self.model.evaluate(self.x_test, self.y_test, batch_size=32)
+        self.console.print(f'Loss: {loss}, Accuracy: {accuracy}')
+
+        predictions = self.model.predict(self.x_test)
+        self.console.print(f'Anomalies in Test: {np.count_nonzero(self.y_test, axis=0)}')
+
+        self.console.print(f'{self.y_test}')
+
+        self.console.print(f'Anomalies in Prediction: {np.count_nonzero(predictions, axis=0)}')
+
+
+
+
 
     def predict(self, current_packet_features, current_packet):
         if self.model is None:
