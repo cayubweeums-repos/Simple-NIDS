@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import gc
 import os.path
 import sys
 
@@ -165,8 +166,7 @@ def pcap2csv(console, in_pcap, out_csv):
     with console.status("[bold green]Pyshark Loading Packets...", spinner='aesthetic') as status:
         pcap_pyshark.load_packets()
 
-    with console.status("[bold green]Pyshark resetting...", spinner='aesthetic') as status:
-        pcap_pyshark.reset()
+    pcap_pyshark.reset()
 
     frame_num = 0
     ignored_packets = 0
@@ -186,10 +186,6 @@ def pcap2csv(console, in_pcap, out_csv):
                 pkt_pyshark = pcap_pyshark.next_packet()
 
                 frame_num += 1
-
-                print(pkt_pyshark)
-                print(pkt_scapy)
-                sys.exit(0)
 
                 # if frame_num % 2 == 0:
                 #     print(frame_num)
@@ -234,7 +230,9 @@ def main(console, training_file_loc, testing_file_loc):
                                    base_file_name + '.csv')
     if not os.path.exists(os.path.join(os.getcwd(), 'data/training_sets/training_' + base_file_name + '.csv')):
         pcap2csv(console, training_file_loc, training_csv_loc)
+        gc.collect()
         pcap2csv(console, testing_file_loc, testing_csv_loc)
+        gc.collect()
 
     with console.status("[bold green]Extracting training features and results...", spinner='aesthetic') \
             as status:
@@ -243,7 +241,7 @@ def main(console, training_file_loc, testing_file_loc):
 
     with console.status("[bold green]Extracting testing features and results...", spinner='aesthetic') \
             as status:
-        testing_features, testing_results, protocol_typ, servic, fla, min, max = \
+        testing_features, testing_results, protocol_type, service, flag, ymin, ymax = \
             extract_packet_features(testing_csv_loc, 'testing_' + base_file_name, protocol_type, service, flag)
 
     return training_features, training_results, testing_features, testing_results, protocol_type, service, \

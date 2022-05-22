@@ -107,7 +107,8 @@ def anomaly_based(stdscr, console):
                                                                                                   selected_dataset)
 
         stdscr.clear()
-        stdscr.addstr(f'train packet num = {train_pkts}    test packet num= {test_pkts}\n Press the any key to continue')
+        stdscr.addstr(
+            f'train packet num = {train_pkts}    test packet num= {test_pkts}\n Press the any key to continue')
         stdscr.refresh()
         stdscr.getch()
 
@@ -132,6 +133,19 @@ def anomaly_based(stdscr, console):
 
             training_dataset, testing_dataset, train_pkts, test_pkts = helpers.split_selected_dataset(console,
                                                                                                       selected_dataset)
+        else:
+            # TODO if the user wants to predict with an existing model then we need to prompt the user
+            #           to aquire the dataset which was used to train the model
+            #           This is required because we need to normalize incoming packets to the same format that the data
+            #           was
+
+            datasets = helpers.get_datasets()
+            used_dataset_selection = Menu(stdscr, 'Which dataset was this your selected model trained with?',
+                                          datasets)
+            used_dataset = datasets[used_dataset_selection.get_selection()]
+
+            training_dataset, testing_dataset, train_pkts, test_pkts = helpers.split_selected_dataset(console,
+                                                                                                      used_dataset)
 
     stdscr.clear()
     stdscr.refresh()
@@ -141,10 +155,10 @@ def anomaly_based(stdscr, console):
     _queue = multiprocessing.Queue()
 
     try:
-        # _sniffer = Sniffer(_queue, log, console)
+        _sniffer = Sniffer(_queue, log, console)
         _engine = Engine(_queue, log, console, training_dataset, testing_dataset, new_model, selected_model,
                          testing)
-        _engine.start()
+        _engine.start(), _sniffer.start()
         sleep(5)
         while not KeyboardInterrupt:
             sleep(3)

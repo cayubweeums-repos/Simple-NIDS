@@ -1,16 +1,3 @@
-# Plan
-- **Optimisitc** 
-	- Expand Simple-NIDS to be able to intake any pcap file and give option to:
-		- Set individual training set and testing set
-		- Split a single pcap into a training and testing set
-	- Option to run tests for an existing model or create a new model and test it
-		- After test data is shown for new models give option to save it
-	- Option to use existing model for realtime test
-		- Give real time graphs and charts when using this option
-	- Get working LSTM, KNN and Naive Bayes
-		- LSTM kinda works, but we will need to see observability in order to check why not fully
-
-## Progress
 ### Notes / Reminders
 - Adapt the attempt at making an interactive menu with rich `rmenu.py` to the menu used to show observability display panels
 - Add to README.md
@@ -31,11 +18,12 @@
   - Under assumptions
     - I am assuming that if you are using a different .pcap than the one provided that you have used snort to identify which packets in your dataset are malicious and placed those packets in a .csv file named `alerts.csv`
     - I am also assuming this file is in the `data/` folder
+  - Add to future work
+    - For testing create pipeline that can output a single packet from a pcap that can be fitted to the model and predicted on
+    - Do the same for a captured realtime packet and ensure this packets matches the format of the pcap parsed packet
 
 ### Anomaly Based detection
-- Currently, ensuring that the timestamps for the training/testing packets are in the same format as the alert csv lines
-  - I am assuming these are off due to the fact that the csv files exclusively have the label 'normal'
 - Next steps
   - Add observability to testing sections
   - Add realtime observability to prediction section
-- Want to figure out if there is a way to have a rich.layout and then place *termplots* inside a specific panel
+  - Want to figure out if there is a way to have a rich.layout and then place *termplots* inside a specific panel

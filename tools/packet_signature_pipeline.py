@@ -2,6 +2,7 @@
 import numpy as np
 
 from signature.objects.common_ports import CommonPorts, get_name_4_value
+from tools import helpers
 
 
 def get_feature_value(feature, protocol_type, service, flag):
@@ -22,7 +23,18 @@ def get_feature_value(feature, protocol_type, service, flag):
 
     new_features[:1] = protocol_type[feature[0]]
     new_features[second_index:second_index] = service[get_name_4_value(feature[1])]
-    new_features[third_index:third_index] = flag[feature[2]]
+    print(flag)
+    # Time crunch forced the below check instead of a fix
+    flag_feature_value = None
+    possible_flags = ['A', 'R', 'S', 'F']
+    for key in flag.keys():
+        if feature[2] in key:
+            for f in possible_flags:
+                if f not in feature[2] and f in key:
+                    break
+            flag_feature_value = flag[key]
+
+    new_features[third_index:third_index] = flag_feature_value
 
     feature[0:3] = new_features
 
@@ -52,6 +64,10 @@ def get_normalized_packet_features(raw_features, protocol_type, service, flag, y
     # print(results)
     # for entry in results:
     #     label[label_dict[entry[0]]] = ""
+
+    if len(protocol_type) == 0 or len(service) == 0 or len(flag) == 0:
+        protocol_type, service, flag = helpers.set_dict_values()
+
     numericalized_train_data_features = get_feature_value(raw_features, protocol_type, service, flag)
     normalized_pkt_features = np.array(
         numericalized_train_data_features)
